@@ -6,7 +6,7 @@ from RSA_communication_agents import RSAListener0, RSASpeaker0, RSAListener1, RS
 
 def get_test_input_policy_single_agent(n, agent):
     """ For the single agent setting.
-        Get the listeners policy, so probability of selecting every possible state,
+        Get the listeners' policies, so probabilities of selecting every possible state,
         when being presented with an input message that was withheld from training.
         The policies are calculated for the case that one message was excluded from training as well as
         for both messages separately in case two messages were excluded from training.
@@ -76,15 +76,15 @@ def get_test_input_policy_single_agent(n, agent):
 
 def get_test_input_policy_two_agents(n, agent):
     """ For the two agent setting.
-        Get the listeners policy, so probability of selecting every possible state,
+        Get the listeners' policy, so probabilities of selecting every possible state,
         when the speaker is presented with an input state that was withheld from training.
         The policies are calculated for the case that one state was excluded from training as well as
-        for both messages separately in case two states were excluded from training.
+        for both states separately in case two states were excluded from training.
         :param n:       number of states and messages (in total)
         :param agent:   'L0_S0' literal speaker-listener combination
                         'L1_S1' pragmatic speaker-listener combination
-        :return [p_missing, p_missing1, p_missing2]:    policies for all agents for the case that one message was
-                                                        excluded from training (p_missing), or that two messages were
+        :return [p_missing, p_missing1, p_missing2]:    policies for all agents for the case that one state was
+                                                        excluded from training (p_missing), or that two states were
                                                         excluded from training (p_missing1, p_missing2)
     """
 
@@ -191,7 +191,7 @@ def me_index(agent):
     """
     # n: number of states and messages
     for i, n in enumerate([3, 10]):
-        # calculate ME index for one message excluded from training
+        # calculate ME index for one input state/message excluded from training
 
         if agent == 'L0' or agent == 'L1':
             p_missing, p_missing1, p_missing2 = get_test_input_policy_single_agent(n, agent)
@@ -204,7 +204,7 @@ def me_index(agent):
 
         print('N=' + str(n), 'K=1:', round(mean_me1, 3), round(std_me1, 3))
 
-        # calculate ME index for two messages excluded from training
+        # calculate ME index for two input states/messages excluded from training
         me2 = ((p_missing1[:, -1] + p_missing2[:, -1] + p_missing1[:, 0] + p_missing2[:, 0]) / 2 - 2 / n) / (
                     (n - 2) / n)
 
@@ -216,8 +216,8 @@ def me_index(agent):
 
 def plot_rewards(agent, n=3, n_epochs=20):
     """ Plots the average rewards over time for the 100 listeners or speaker-listener combinations trained in
-        experiment 1. One plot (left) is for the agents that were trained with one input message (single agent setting)
-        or state (two agent setting) excluded from training (K=1), another plot (right) is for the agents that were
+        Experiment 1. The left plots is for the agents that were trained with one input message (single agent setting)
+        or state (two agent setting) excluded from training (K=1). The right plot is for the agents that were
         trained with two input messages or states excluded from training (K=2). The average is shown in a thick line,
         the range from minimal to maximal values as shaded region.
         :param agent:       'L0' literal listener (single agent setting)
@@ -225,7 +225,7 @@ def plot_rewards(agent, n=3, n_epochs=20):
                             'L0_S0' literal speaker-listener combination (two agent setting)
                             'L1_S1' pragmatic speaker-listener combination (two agent setting)
         :param n:           number of states, here 3 or 10
-        :param n_epochs:    number of epochs (from epoch 0) you would like to plot
+        :param n_epochs:    number of epochs you would like to plot
     """
 
     fig = plt.figure(figsize=(10, 4))
@@ -407,7 +407,7 @@ def bar_plot_me_bias(agent):
                 ax.bar(positions2, mean_p_missing2, yerr=std_p_missing2, color='orangered',
                        edgecolor='k', width=0.3, capsize=3, alpha=1, )
 
-                plt.legend(['message ' + str(n - 1), 'message 0'], fontsize=15)
+                plt.legend(['message ' + str(n - 1), 'message ' + str(n)], fontsize=15)
                 leg = ax.get_legend()
                 leg.legendHandles[0].set_color('blue')
                 leg.legendHandles[1].set_color('orangered')
@@ -417,14 +417,14 @@ def bar_plot_me_bias(agent):
             plt.xlabel('state', fontsize=20)
             if i == 0 and j == 0:
                 plt.ylabel('selection probability', fontsize=20)
-            plt.xticks(range(1, n + 1), [k for k in range(n)], fontsize=18)
+            plt.xticks(range(1,n+1), [k for k in range(1,n+1)], fontsize=18)
             plt.yticks(fontsize=18)
             plt.title(str(n) + ' states, ' + str(ME) + ' missing', fontsize=20)
 
 
 def plot_rewards_plus_me_index_single_agent():
     """ Plots the average reward and ME index over time for the single agent setting. The plots include the simulations
-        with three and ten states where one state was left out from training.
+        with three and ten states, where one message was left out from training.
     """
 
     colors = [['red', 'red'], ['blue', 'blue']]
@@ -462,7 +462,7 @@ def plot_rewards_plus_me_index_single_agent():
             agent_input = np.zeros((1, n, n), dtype=np.float32)
             agent_input[0, n - 1, :] = np.ones((1, n), dtype=np.float32)
 
-            # resort rewards and indices such that the values of all agents are pooled together per time step
+            # re-sort rewards and indices such that the values of all agents are pooled together per time step
             # similarly calculate the ME index for every agent at every time step and pool per time step
             me_index_all = np.zeros((len(indices), 100))
             rewards_sorted = np.zeros((len(indices), 100))
@@ -558,7 +558,7 @@ def plot_rewards_plus_me_index_two_agents():
             me_index_all = np.zeros((len(indices), 100))
             rewards_sorted = np.zeros((len(indices), 100))
 
-            # resort rewards and indices such that the values of all agents are pooled together per time step
+            # re-sort rewards and indices such that the values of all agents are pooled together per time step
             # similarly calculate the ME index for every agent at every time step and pool per time step
             for count_indices, index in enumerate(indices):
 
