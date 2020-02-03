@@ -9,6 +9,7 @@ In any file and folder names 'labeling' usually refers to the single agent setti
 The project was implemented with Python 3.7.3. Apart from standard library packages we use: 
 * tensorflow 2.0 and numpy 1.16.4 (for implementing the agents and running the simulations)
 * matplotlib 3.1.0 (for plotting the data)
+
 While tensorflow (>=)2.0 is prerequisites other verions for python and numpy may work.  
 
 ### 3. File structure 
@@ -16,6 +17,7 @@ There project contains
 * file *RSA_communication_agents.py*, where the agents are implemented
 * folder *ME_bias* for Experiment 1
 * folder *convergence_time_scales* for Experiment 2
+
 The two folders are described here in more detail. 
 
 #### ME_bias
@@ -25,6 +27,7 @@ This folder contains all code belonging to Experiment 1, which investigates the 
 * plot_ME_bias_labeling.ipynb: visualizes the data from the single agent setting
 * plot_ME_bias_communication.ipynb: visualizes the data from the two agent setting
 * ME_data_analysis_and_visualization_functions.py: the functions for plotting the data and caluclating the ME indices are outsourced to this file. 
+
 The plots are apart from minor changes the figures used for the paper. 
 
 #### convergence_time_scales 
@@ -32,6 +35,7 @@ This folder contains all code belonging to Experiment 2, which investigates the 
 * convergence_time_labeling.ipynb: runs the simulations and saves the data for the single agent setting
 * convergence_time_communication.ipynb: runs the simulations and saves the data for the two agent setting
 * plot_learning_time_scales.ipynb: plots the data from both settings 
+
 Also here, the plots are apart from minor changes the figures used for the paper. 
 
 ### 4. Practical information  
