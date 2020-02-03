@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
-# import pickle
 import numpy as np
 from RSA_communication_agents import RSAListener0, RSASpeaker0, RSAListener1, RSASpeaker1
 
