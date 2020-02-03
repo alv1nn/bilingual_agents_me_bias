@@ -428,7 +428,7 @@ def plot_rewards_plus_me_index_single_agent():
         with three and ten states where one state was left out from training.
     """
 
-    colors = [['crimson', 'darkred'], ['dodgerblue', 'navy']]
+    colors = [['red', 'red'], ['blue', 'blue']]
 
     fig = plt.figure(figsize=(15, 4))
 
@@ -496,9 +496,9 @@ def plot_rewards_plus_me_index_single_agent():
             std_me_index = np.std(me_index_all, axis=1)
 
             ax.errorbar(indices, mean_rewards, yerr=std_rewards, errorevery=error_step, color=colors[a][0],
-                        linewidth=2.0)
+                        linewidth=3.0)
             ax.errorbar(indices, mean_me_index, yerr=std_me_index, errorevery=error_step, color=colors[a][1],
-                        linewidth=2.0)
+                        linewidth=3.0, linestyle='dashed')
 
             plt.xticks(fontsize=20)
             plt.yticks([0, 1], fontsize=20)
@@ -518,7 +518,7 @@ def plot_rewards_plus_me_index_two_agents():
         The plots include the simulations with three and ten states where one state was left out from training.
     """
 
-    colors = [['crimson', 'darkred'], ['dodgerblue', 'navy']]
+    colors = [['red', 'red'], ['blue', 'blue']]
 
     fig = plt.figure(figsize=(15, 4))
 
@@ -613,11 +613,11 @@ def plot_rewards_plus_me_index_two_agents():
             if n == 10 and agent == 'L1_S1':
                 error_step = 90
             ax.errorbar(indices, mean_rewards, yerr=std_rewards, errorevery=error_step, color=colors[a][0],
-                        linewidth=2.0)
+                        linewidth=3.0)
             if n == 10 and agent == 'L1_S1':
                 error_step = 95
             ax.errorbar(indices, mean_me_index, yerr=std_me_index, errorevery=error_step, color=colors[a][1],
-                        linewidth=2.0)
+                        linewidth=3.0, linestyle='dashed')
 
             plt.xticks(fontsize=20)
             plt.yticks([0, 1], fontsize=20)
