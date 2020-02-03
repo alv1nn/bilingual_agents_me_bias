@@ -1,6 +1,6 @@
 ## pragmatic_agents_me_bias
-This code belongs to the CogSci 2020 submission **Reinforcement of Semantic Representations in Pragmatic Agents Leads to the
-Emergence of a Mutual Exclusivity Bias**.
+This code belongs to the CogSci 2020 submission **Reinforcement of semantic representations in pragmatic agents leads to the
+emergence of a mutual exclusivity bias**.
 
 ### 1. Notation
 In code and file names 'labeling' refers to the single agent setting of the Lewis game and 'communication' refers to the two agent setting (see paper).
