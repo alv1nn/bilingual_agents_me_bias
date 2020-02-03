@@ -1,16 +1,16 @@
-# pragmatic_agents_me_bias
+## pragmatic_agents_me_bias
 
 
 This code belongs to the CogSci 2020 submission 'Reinforcement of Semantic Representations in Pragmatic Agents Leads to the
-Emergence of a Mutual Exclusivity Bias.
+Emergence of a Mutual Exclusivity Bias'.
 
 
-### Notation
+#### Notation
 
 In the code 'labeling' usually refers to the single agent setting of the Lewis game and 'communication' refers to the two agent setting of the Lewis game (see paper).
 
 
-### Prerequisites
+#### Prerequisites
 
 The project was implemented with Python 3.7.3. We only list packages that are not part of the Python standard library. 
 
@@ -21,15 +21,15 @@ We used the following packages:
 While the code will only work with tensorflow 2.0 it might run with other python, numpy and matplotlib version. 
 
 
-### File structure 
+#### File structure 
 
 There project contains the python file, *RSA_communication_agents.py*, where the agents are implemented and one folder for each experiment, *ME_bias* for Experiment 1 and *convergence_times_scales* for Experiment 2. 
 
-#### RSA_communication_agents.py
+##### RSA_communication_agents.py
 
 This file contains the agents. 
 
-#### ME_bias
+##### ME_bias
 
 This folder contains all code belonging specifically to experiment 1 that investigates the emergence of a mutual exclusivity bias in literal and pragmatic agents.
 
@@ -41,7 +41,7 @@ This folder contains all code belonging specifically to experiment 1 that invest
 
 The plots are apart from minor changes the figures used for the paper. 
 
-#### convergence_time_scales 
+##### convergence_time_scales 
 
 This folder contains all code belonging specifically to experiment 2 that investigates the convergence time scales of literal and pragmatic agents for different types of input distributions. 
 
@@ -51,7 +51,7 @@ This folder contains all code belonging specifically to experiment 2 that invest
 
 Also here, the plots are apart from minor changes the figures used for the paper. 
 
-### Practical information  
+#### Practical information  
 
 It might be that you encounter numerical instabilities when applying the model to larger systems or using larger alpha-values for the pragmatic agents. You can amend this by small changes to the *RSA_communication_agents.py* file by simply adding small epsilon values to avoid division by zero or taking the logarithm of zero. Just make sure that epsilon is small enough so it does not interfere with the calculation (*small enough* is use case dependent). As a side note on that: if you add epsilon to avoid taking the logarithm of zero in the sampling function, do so already on the return value of the call function to allow for correct computation of the gradient. 
 
