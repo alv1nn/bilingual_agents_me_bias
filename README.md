@@ -26,7 +26,7 @@ This folder contains all code belonging to Experiment 1, which investigates the 
 * ME_bias_communication.ipynb: runs the simulations and saves the data for the two agent setting
 * plot_ME_bias_labeling.ipynb: visualizes the data from the single agent setting
 * plot_ME_bias_communication.ipynb: visualizes the data from the two agent setting
-* ME_data_analysis_and_visualization_functions.py: the functions for plotting the data and calculating the ME indices are outsourced to this file. 
+* ME_data_analysis_and_visualization_functions.py: contains the functions for plotting the data and calculating the ME index 
 
 Apart from minor changes the plots correspond to the figures in the paper. 
 
