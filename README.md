@@ -19,10 +19,10 @@ While the code will only work with tensorflow 2.0 it might run with other python
 ### 3. File structure 
 There project contains the python file, *RSA_communication_agents.py*, where the agents are implemented and one folder for each experiment, *ME_bias* for Experiment 1 and *convergence_times_scales* for Experiment 2. 
 
-##### RSA_communication_agents.py
+### RSA_communication_agents.py
 This file contains the agents. 
 
-##### ME_bias
+### ME_bias
 This folder contains all code belonging specifically to experiment 1 that investigates the emergence of a mutual exclusivity bias in literal and pragmatic agents.
 * ME_bias_labeling.ipynb: runs the simulations and saves the data for the single agent setting
 * ME_bias_communication.ipynb: runs the simulations and saves the data for the two agents setting
@@ -31,7 +31,7 @@ This folder contains all code belonging specifically to experiment 1 that invest
 * ME_data_analysis_and_visualization_functions.py: the functions for plotting the data and caluclating the ME indices are outsourced to this file. 
 The plots are apart from minor changes the figures used for the paper. 
 
-##### convergence_time_scales 
+### convergence_time_scales 
 This folder contains all code belonging specifically to experiment 2 that investigates the convergence time scales of literal and pragmatic agents for different types of input distributions. 
 * convergence_time_labeling.ipynb: runs the simulations and saves the data for the single agent setting
 * convergence_time_communication.ipynb: runs the simulations and saves the data for the two agent setting
