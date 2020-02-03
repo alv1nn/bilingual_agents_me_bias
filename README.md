@@ -1,4 +1,4 @@
-## pragmatic_agents_me_bias
+## Reinforcement of semantic representations in pragmatic agents leads to the emergence of a mutual exclusivity bias
 This code belongs to the CogSci 2020 submission **Reinforcement of semantic representations in pragmatic agents leads to the
 emergence of a mutual exclusivity bias**.
 
