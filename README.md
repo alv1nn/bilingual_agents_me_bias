@@ -17,7 +17,7 @@ While the code will only work with tensorflow 2.0 it might run with other python
 
 
 ### 3. File structure 
-There project contains the python file, *RSA_communication_agents.py*, where the agents are implemented and one folder for each experiment, *ME_bias* for Experiment 1 and *convergence_times_scales* for Experiment 2. 
+There project contains the python file, *RSA_communication_agents.py*, where the agents are implemented, and one folder for each experiment, *ME_bias* for Experiment 1 and *convergence_times_scales* for Experiment 2. 
 
 ### RSA_communication_agents.py
 This file contains the agents. 
