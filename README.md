@@ -14,9 +14,9 @@ While tensorflow (>=)2.0 is required other verions for python and numpy may work
 
 ### 3. File structure 
 There project contains
-* file *RSA_communication_agents.py*, where the agents are implemented
-* folder *ME_bias* for Experiment 1
-* folder *convergence_time_scales* for Experiment 2
+* the file *RSA_communication_agents.py*, where the agents are implemented
+* the folder *ME_bias* for Experiment 1
+* the folder *convergence_time_scales* for Experiment 2
 
 The two folders are described in more detail. 
 
