@@ -3,7 +3,7 @@ This code belongs to the CogSci 2020 submission **Reinforcement of Semantic Repr
 Emergence of a Mutual Exclusivity Bias**.
 
 ### 1. Notation
-In code and file naems 'labeling' refers to the single agent setting of the Lewis game and 'communication' refers to the two agent setting(see paper).
+In code and file names 'labeling' refers to the single agent setting of the Lewis game and 'communication' refers to the two agent setting(see paper).
 
 ### 2. Prerequisites
 The project was implemented with Python 3.7.3. Apart from standard library packages we use: 
