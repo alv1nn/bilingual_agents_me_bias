@@ -35,7 +35,7 @@ Apart from minor changes the plots correspond to the figures in the paper. Note 
 This folder contains all code belonging to Experiment 2, which investigates the convergence time scales of literal and pragmatic agents for different types of input distributions. 
 * convergence_time_labeling.ipynb: runs the simulations and saves the data for the single agent setting
 * convergence_time_communication.ipynb: runs the simulations and saves the data for the two agent setting
-* plot_learning_time_scales.ipynb: plots the data from both settings 
+* plot_convergence_time_scales.ipynb: plots the data from both settings 
 
 Also here, apart from minor changes the plots correspond to the figures in the paper. 
 
