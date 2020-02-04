@@ -9,7 +9,7 @@ In code and file names 'labeling' refers to the single agent setting of the Lewi
 ### 2. Prerequisites
 The project was implemented with Python 3.7.3. Apart from standard library packages we use: 
 
-tensorflow 2.0 and numpy 1.16.4 (for implementing the agents and running the simulations)
+* tensorflow 2.0 and numpy 1.16.4 (for implementing the agents and running the simulations)
 
 * matplotlib 3.1.0 (for plotting the data)
 
@@ -18,24 +18,24 @@ While tensorflow (>=)2.0 is required other versions for python and numpy may wor
 ### 3. Files
 The project contains
 
-the file *RSA_communication_agents.py*, where the agents are implemented
+* the file *RSA_communication_agents.py*, where the agents are implemented
  
-the folder *ME_bias* for Experiment 1
+* the folder *ME_bias* for Experiment 1
  
-the folder *convergence_time_scales* for Experiment 2
+* the folder *convergence_time_scales* for Experiment 2
 
 We describe the two folders in more detail below. 
 
 #### ME_bias
 This folder contains all code belonging to Experiment 1, which investigates the emergence of a mutual exclusivity bias in literal and pragmatic agents.
 
-ME_bias_labeling.ipynb: runs the simulations and saves the data for the single agent setting
+* ME_bias_labeling.ipynb: runs the simulations and saves the data for the single agent setting
  
-ME_bias_communication.ipynb: runs the simulations and saves the data for the two agent setting
+* ME_bias_communication.ipynb: runs the simulations and saves the data for the two agent setting
  
-plot_ME_bias_labeling.ipynb: visualizes the data from the single agent setting
+* plot_ME_bias_labeling.ipynb: visualizes the data from the single agent setting
 
-plot_ME_bias_communication.ipynb: visualizes the data from the two agent setting
+* plot_ME_bias_communication.ipynb: visualizes the data from the two agent setting
 
 ME_data_analysis_and_visualization_functions.py: contains the functions for plotting the data and calculating the ME index 
 
@@ -44,11 +44,11 @@ Apart from minor changes the plots correspond to the figures in the paper. Note 
 #### convergence_time_scales 
 This folder contains all code belonging to Experiment 2, which investigates the convergence time scales of literal and pragmatic agents for different types of input distributions. 
 
-convergence_time_labeling.ipynb: runs the simulations and saves the data for the single agent setting
+* convergence_time_labeling.ipynb: runs the simulations and saves the data for the single agent setting
 
-convergence_time_communication.ipynb: runs the simulations and saves the data for the two agent setting
+* convergence_time_communication.ipynb: runs the simulations and saves the data for the two agent setting
 
-plot_convergence_time_scales.ipynb: plots the data from both settings 
+* plot_convergence_time_scales.ipynb: plots the data from both settings 
 
 Also here, apart from minor changes the plots correspond to the figures in the paper. 
 
