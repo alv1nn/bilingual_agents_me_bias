@@ -4,28 +4,33 @@ import numpy as np
 from RSA_communication_agents import RSAListener0, RSASpeaker0, RSAListener1, RSASpeaker1
 
 
-def get_test_input_policy_single_agent(n, agent):
+def get_test_input_policy_single_agent(n, agent, ablation=False):
     """ For the single agent setting.
         Get the listeners' policies, so probabilities of selecting every possible state,
         when being presented with an input message that was withheld from training.
         The policies are calculated for the case that one message was excluded from training as well as
         for both messages separately in case two messages were excluded from training.
-        :param n:       number of states and messages (in total)
-        :param agent:   'L0' literal listener
-                        'L1' pragmatic listener
+        :param n:           number of states and messages (in total)
+        :param agent:       'L0' literal listener
+                            'L1' pragmatic listener
+        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
+                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
         :return [p_missing, p_missing1, p_missing2]:    policies for all agents for the case that one message was
                                                         excluded from training (p_missing), or that two messages were
                                                         excluded from training (p_missing1, p_missing2)
     """
+
+    agent_body = agent  # agent body determines whether the lexica of literal or pragmatic agents are used
+    agent_head = agent  # agent head determined whether the literal or pragmatic reasoning is used at test time
 
     # ME: missing examples
     for ME in [1, 2]:
 
         # set file path
         if agent == 'L0':
-            filename = ('data/labeling/L0/' + str(n) + '_states/' + agent + '_' + str(ME) + 'missing_')
+            filename = ('data/labeling/L0/' + str(n) + '_states/' + agent_body + '_' + str(ME) + 'missing_')
         elif agent == 'L1':
-            filename = ('data/labeling/L1/' + str(n) + '_states/' + agent + '_' + str(ME) + 'missing_5.0alpha_')
+            filename = ('data/labeling/L1/' + str(n) + '_states/' + agent_body + '_' + str(ME) + 'missing_5.0alpha_')
 
         # load final lexicon for every trained agent
         lexica_all = []
@@ -46,11 +51,17 @@ def get_test_input_policy_single_agent(n, agent):
             p_missing1 = []
             p_missing2 = []
 
+        # determine whether pragmatic or literal reasoning is used at test time
+        if ablation and agent_body == 'L0':
+            agent_head = 'L1'
+        if ablation and agent_body == 'L1':
+            agent_head = 'L0'
+
         # iterate over the listeners' lexica and calculate the policy for an agent with that lexion
         for l in lexica_all:
-            if agent == 'L0':
+            if agent_head == 'L0':
                 listener = RSAListener0(n, n, l)
-            elif agent == 'L1':
+            elif agent_head == 'L1':
                 listener = RSAListener1(n, n, l, alpha=5.)
             # calculate the policies for the state that was excluded from training in case one state was excluded
             if ME == 1:
@@ -74,7 +85,7 @@ def get_test_input_policy_single_agent(n, agent):
     return return_values
 
 
-def get_test_input_policy_two_agents(n, agent):
+def get_test_input_policy_two_agents(n, agent, ablation=False):
     """ For the two agent setting.
         Get the listeners' policy, so probabilities of selecting every possible state,
         when the speaker is presented with an input state that was withheld from training.
@@ -83,19 +94,24 @@ def get_test_input_policy_two_agents(n, agent):
         :param n:       number of states and messages (in total)
         :param agent:   'L0_S0' literal speaker-listener combination
                         'L1_S1' pragmatic speaker-listener combination
+        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
+                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
         :return [p_missing, p_missing1, p_missing2]:    policies for all agents for the case that one state was
                                                         excluded from training (p_missing), or that two states were
                                                         excluded from training (p_missing1, p_missing2)
     """
+
+    agent_body = agent  # agent body determines whether the lexica of literal or pragmatic agents are used
+    agent_head = agent  # agent head determined whether the literal or pragmatic reasoning is used at test time
 
     # ME: missing examples
     for ME in [1, 2]:
 
         # set file path
         if agent == 'L0_S0':
-            filename = 'data/communication/' + str(n) + '_states/' + agent + '_' + str(ME) + 'missing_'
+            filename = 'data/communication/' + str(n) + '_states/' + agent_body + '_' + str(ME) + 'missing_'
         elif agent == 'L1_S1':
-            filename = 'data/communication/' + str(n) + '_states/' + agent + '_' + str(ME) + 'missing_5.0alpha_'
+            filename = 'data/communication/' + str(n) + '_states/' + agent_body + '_' + str(ME) + 'missing_5.0alpha_'
 
         # load final lexica for all speakers and listeners
         lexica_all_L = []
@@ -119,6 +135,12 @@ def get_test_input_policy_two_agents(n, agent):
             p_missing1 = []
             p_missing2 = []
 
+        # determine whether pragmatic or literal reasoning is used at test time
+        if ablation and agent_body == 'L0_S0':
+            agent_head = 'L1_S1'
+        if ablation and agent_body == 'L1_S1':
+            agent_head = 'L0_S0'
+
         # Calculating the policy of the listener when the speaker is presented with one of the test states is
         # done in the following way:
         # 1) calculate the speaker's policy for that input state (conditional distribution over messages)
@@ -130,10 +152,10 @@ def get_test_input_policy_two_agents(n, agent):
 
         # iterate over all speaker-listener combinations
         for l_S, l_L in zip(lexica_all_S, lexica_all_L):
-            if agent == 'L0_S0':
+            if agent_head == 'L0_S0':
                 speaker = RSASpeaker0(n, n, l_S)
                 listener = RSAListener0(n, n, l_L)
-            elif agent == 'L1_S1':
+            elif agent_head == 'L1_S1':
                 speaker = RSASpeaker1(n, n, l_S, alpha=5.)
                 listener = RSAListener1(n, n, l_L, alpha=5.)
 
@@ -182,21 +204,23 @@ def get_test_input_policy_two_agents(n, agent):
     return np.array(p_missing), np.array(p_missing1), np.array(p_missing2)
 
 
-def me_index(agent):
+def me_index(agent, ablation=False):
     """ Calculate the ME index as defined in the paper for single or two agent setting.
-    :param agent:   'L0' literal listener (single agent setting)
-                    'L1' pragmatic listener (single agent setting)
-                    'L0_S0' literal speaker-listener combination (two agent setting)
-                    'L1_S1' pragmatic speaker-listener combination (two agent setting)
+    :param agent:       'L0' literal listener (single agent setting)
+                        'L1' pragmatic listener (single agent setting)
+                        'L0_S0' literal speaker-listener combination (two agent setting)
+                        'L1_S1' pragmatic speaker-listener combination (two agent setting)
+    :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
+                        the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
     """
     # n: number of states and messages
     for i, n in enumerate([3, 10]):
         # calculate ME index for one input state/message excluded from training
 
         if agent == 'L0' or agent == 'L1':
-            p_missing, p_missing1, p_missing2 = get_test_input_policy_single_agent(n, agent)
+            p_missing, p_missing1, p_missing2 = get_test_input_policy_single_agent(n, agent, ablation=ablation)
         elif agent == 'L0_S0' or agent == 'L1_S1':
-            p_missing, p_missing1, p_missing2 = get_test_input_policy_two_agents(n, agent)
+            p_missing, p_missing1, p_missing2 = get_test_input_policy_two_agents(n, agent, ablation=ablation)
 
         me1 = (p_missing[:, -1] - 1 / n) / ((n - 1) / n)
         mean_me1 = np.mean(me1)
@@ -206,7 +230,7 @@ def me_index(agent):
 
         # calculate ME index for two input states/messages excluded from training
         me2 = ((p_missing1[:, -1] + p_missing2[:, -1] + p_missing1[:, 0] + p_missing2[:, 0]) / 2 - 2 / n) / (
-                    (n - 2) / n)
+                (n - 2) / n)
 
         mean_me2 = np.mean(me2)
         std_me2 = np.std(me2)
@@ -243,7 +267,6 @@ def plot_rewards(agent, n=3, n_epochs=20):
     elif agent == 'L1_S1':
         filename1 = ('data/communication/' + str(n) + '_states/' + agent + '_1missing_5.0alpha_rewards_run')
         filename2 = ('data/communication/' + str(n) + '_states/' + agent + '_2missing_5.0alpha_rewards_run')
-
 
     rewards_all_ME1 = []
     rewards_all_ME2 = []
@@ -351,17 +374,19 @@ def plot_lexica_single_agent(agent):
     colorbar.ax.tick_params(labelsize=18)
 
 
-def bar_plot_me_bias(agent):
+def bar_plot_me_bias(agent, ablation=False):
     """ Plots the listeners' average selection probability for all states given a novel example (that was not part of
         the training. For the single agent setting a novel example is a message that was not part of training, for the
         two agent setting a novel example is a state that was not part of training (and is presented to the speaker
         who produces a message based on which the listener makes a selection).
         Four plots are generated for the different combinations of three or ten states in total and 1 or 2 states being
         excluded from training.
-        :param agent:   'L0' literal listener (single agent setting)
-                        'L1' pragmatic listener (single agent setting)
-                        'L0_S0' literal speaker-listener combination (two agent setting)
-                        'L1_S1' pragmatic speaker-listener combination (two agent setting)
+        :param agent:       'L0' literal listener (single agent setting)
+                            'L1' pragmatic listener (single agent setting)
+                            'L0_S0' literal speaker-listener combination (two agent setting)
+                            'L1_S1' pragmatic speaker-listener combination (two agent setting)
+        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
+                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
     """
 
     fig = plt.figure(figsize=(19, 3))
@@ -370,9 +395,9 @@ def bar_plot_me_bias(agent):
     for i, n in enumerate([3, 10]):
 
         if agent == 'L0' or agent == 'L1':
-            p_missing, p_missing1, p_missing2 = get_test_input_policy_single_agent(n, agent)
+            p_missing, p_missing1, p_missing2 = get_test_input_policy_single_agent(n, agent, ablation=ablation)
         elif agent == 'L0_S0' or agent == 'L1_S1':
-            p_missing, p_missing1, p_missing2 = get_test_input_policy_two_agents(n, agent)
+            p_missing, p_missing1, p_missing2 = get_test_input_policy_two_agents(n, agent, ablation=ablation)
 
         # ME: missing examples
         for j, ME in enumerate([1, 2]):
@@ -417,14 +442,17 @@ def bar_plot_me_bias(agent):
             plt.xlabel('state', fontsize=20)
             if i == 0 and j == 0:
                 plt.ylabel('selection probability', fontsize=20)
-            plt.xticks(range(1,n+1), [k for k in range(1,n+1)], fontsize=18)
+            plt.xticks(range(1, n + 1), [k for k in range(1, n + 1)], fontsize=18)
             plt.yticks(fontsize=18)
             plt.title(str(n) + ' states, ' + str(ME) + ' missing', fontsize=20)
 
 
-def plot_rewards_plus_me_index_single_agent():
+def plot_rewards_plus_me_index_single_agent(ablation=False):
     """ Plots the average reward and ME index over time for the single agent setting. The plots include the simulations
         with three and ten states, where one message was left out from training.
+
+        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
+                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
     """
 
     colors = [['red', 'red'], ['blue', 'blue']]
@@ -443,11 +471,19 @@ def plot_rewards_plus_me_index_single_agent():
 
         for a, agent in enumerate(['L0', 'L1']):
 
+            # determine which lexica to evaluate and which reasoning ability at test time
+            agent_body = agent  # agent body determines whether the lexica of literal or pragmatic agents are used
+            agent_head = agent  # agent head determined whether the literal or pragmatic reasoning is used at test time
+            if ablation and agent_body == 'L0':
+                agent_head = 'L1'
+            elif ablation and agent_body == 'L1':
+                agent_head = 'L0'
+
             # set file path
             if agent == 'L0':
-                filename = ('data/labeling/L0/' + str(n) + '_states/' + agent + '_1missing_')
+                filename = ('data/labeling/L0/' + str(n) + '_states/' + agent_body + '_1missing_')
             elif agent == 'L1':
-                filename = ('data/labeling/L1/' + str(n) + '_states/' + agent + '_1missing_5.0alpha_')
+                filename = ('data/labeling/L1/' + str(n) + '_states/' + agent_body + '_1missing_5.0alpha_')
 
             # load lexica and rewards until the maximum epoch that should be plotted
             lexica_all = []
@@ -475,10 +511,10 @@ def plot_rewards_plus_me_index_single_agent():
                     rewards_sorted[idx, run] = rewards_all[run][idx]
                     lexicon = lexica_all[run][idx]
 
-                    if agent == 'L0':
+                    if agent_head == 'L0':
                         listener = RSAListener0(n, n, lexicon)
-                    elif agent == 'L1':
-                        listener = RSAListener1(n, n, lexicon, 5.)
+                    elif agent_head == 'L1':
+                        listener = RSAListener1(n, n, lexicon, alpha=5.)
                     policy, _ = listener.get_states(agent_input)
                     policy = np.squeeze(policy[:])
                     policy = policy / np.sum(policy)
@@ -512,9 +548,12 @@ def plot_rewards_plus_me_index_single_agent():
         fig.tight_layout()
 
 
-def plot_rewards_plus_me_index_two_agents():
+def plot_rewards_plus_me_index_two_agents(ablation=False):
     """ Plots the average reward and ME index over time for the two agent setting.
         The plots include the simulations with three and ten states where one state was left out from training.
+
+        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
+                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
     """
 
     colors = [['red', 'red'], ['blue', 'blue']]
@@ -533,11 +572,19 @@ def plot_rewards_plus_me_index_two_agents():
 
         for a, agent in enumerate(['L0_S0', 'L1_S1']):
 
+            # determine which lexica to evaluate and which reasoning ability at test time
+            agent_body = agent  # agent body determines whether the lexica of literal or pragmatic agents are used
+            agent_head = agent  # agent head determined whether the literal or pragmatic reasoning is used at test time
+            if ablation and agent_body == 'L0_S0':
+                agent_head = 'L1_S1'
+            elif ablation and agent_body == 'L1_S1':
+                agent_head = 'L0_S0'
+
             # set file path
             if agent == 'L0_S0':
-                filename = 'data/communication/' + str(n) + '_states/' + agent + '_1missing_'
+                filename = 'data/communication/' + str(n) + '_states/' + agent_body + '_1missing_'
             if agent == 'L1_S1':
-                filename = 'data/communication/' +  str(n) + '_states/' + agent + '_1missing_5.0alpha_'
+                filename = 'data/communication/' + str(n) + '_states/' + agent_body + '_1missing_5.0alpha_'
 
             # load lexica and rewards until the maximum epoch that should be plotted
             lexica_all_speaker = []
@@ -571,10 +618,10 @@ def plot_rewards_plus_me_index_two_agents():
                     lexicon_speaker = lexica_all_speaker[run][index]
                     lexicon_listener = lexica_all_listener[run][index]
 
-                    if agent == 'L0_S0':
+                    if agent_head == 'L0_S0':
                         listener = RSAListener0(n, n, lexicon_listener)
                         speaker = RSASpeaker0(n, n, lexicon_speaker)
-                    elif agent == 'L1_S1':
+                    elif agent_head == 'L1_S1':
                         listener = RSAListener1(n, n, lexicon_listener, alpha=5.)
                         speaker = RSASpeaker1(n, n, lexicon_speaker, alpha=5.)
 
@@ -609,11 +656,11 @@ def plot_rewards_plus_me_index_two_agents():
             mean_me_index = np.mean(me_index_all, axis=1)
             std_me_index = np.std(me_index_all, axis=1)
 
-            if n == 10 and agent == 'L1_S1':
+            if n == 10 and agent_body == 'L1_S1':
                 error_step = 90
             ax.errorbar(indices, mean_rewards, yerr=std_rewards, errorevery=error_step, color=colors[a][0],
                         linewidth=3.0)
-            if n == 10 and agent == 'L1_S1':
+            if n == 10 and agent_body == 'L1_S1':
                 error_step = 95
             ax.errorbar(indices, mean_me_index, yerr=std_me_index, errorevery=error_step, color=colors[a][1],
                         linewidth=3.0, linestyle='dashed')
