@@ -1,6 +1,7 @@
 ## pragmatic_agents_me_bias
 
 This code belongs to the following paper: 
+  
 Ohmer, X., König, P., Franke, M. (2020). Reinforcement of semantic representations in pragmatic agents leads to the
 emergence of a mutual exclusivity bias. *42nd Annual Virtual Meeting of the Cognitive Science Society*, pp. 1779-1785.
 
