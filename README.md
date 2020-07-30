@@ -3,7 +3,7 @@
 This code belongs to the following paper: 
   
 Ohmer, X., König, P., Franke, M. (2020). Reinforcement of semantic representations in pragmatic agents leads to the
-emergence of a mutual exclusivity bias. *42nd Annual Virtual Meeting of the Cognitive Science Society*, pp. 1779-1785.
+emergence of a mutual exclusivity bias. *42nd Annual Meeting of the Cognitive Science Society*, pp. 1779-1785.
 
 ### 1. Notation
 In code and file names 'labeling' refers to the single agent setting of the Lewis game and 'communication' refers to the two agent setting (see paper).
