@@ -641,27 +641,27 @@ def plot_rewards_plus_me_index_pragmatic_agent(ablation=False, n_array = [6, 7, 
             me_index_all[idx, :] = (me_index - (1 / n)) / ((n - 1) / n)
 
         # plot mean and stds for the rewards and ME indices over time
-        mean_rewards = np.mean(rewards_sorted, axis=1)
-        std_rewards = np.std(rewards_sorted, axis=1)
+        #mean_rewards = np.mean(rewards_sorted, axis=1)
+        #std_rewards = np.std(rewards_sorted, axis=1)
         mean_me_index = np.mean(me_index_all, axis=1)
         std_me_index = np.std(me_index_all, axis=1)
 
-        plt.errorbar(indices, mean_rewards, yerr=std_rewards, errorevery=error_step, color=colors[n_index],
-                    linewidth=3.0)
+        #plt.errorbar(indices, mean_rewards, yerr=std_rewards, errorevery=error_step, color=colors[n_index],
+        #            linewidth=3.0)
         plt.errorbar(indices, mean_me_index, yerr=std_me_index, errorevery=error_step, color=colors[n_index],
                     linewidth=3.0, linestyle='dashed')
 
         plt.xticks(fontsize=20)
         plt.yticks([0, 1], fontsize=20)
         plt.xlabel('epoch', fontsize=25)
-        plt.ylabel('mean reward /\n ME index', fontsize=25)
+        plt.ylabel('mean ME index', fontsize=25)
 
-        # if n == 10:
-        box = plt.get_position()
-        plt.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-        plt.legend(['literal reward', 'literal $I_{ME}$', 'pragmatic reward', 'pragmatic $I_{ME}$'],
-                    loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
-        fig.tight_layout()
+    # if n == 10:
+    #box = plt.get_position()
+    #plt.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    plt.legend(['n=6 $I_{ME}$', 'n=7 $I_{ME}$', 'n=8 $I_{ME}$', 'n=9 $I_{ME}$', 'n=10 $I_{ME}$'],
+                loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
+    fig.tight_layout()
 
 def plot_rewards_plus_me_index_two_agents(ablation=False):
     """ Plots the average reward and ME index over time for the two agent setting.
