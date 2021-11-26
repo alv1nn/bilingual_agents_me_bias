@@ -128,10 +128,10 @@ class RSAListener0(tf.keras.Model):
                         and all other entries are zero, shape (batch_size, n_messages, n_states)
         :param kwargs
         :return:        returns the policies: the distributions over states given the input messages (not normalized),
-                        shape (batch_size, n_messages)
+                        shape (batch_size, n_states)
         """
         x = inputs * tf.transpose(self.lexicon)     # shape batch_size * n_messages * n_states
-        x = tf.reduce_sum(x, axis=1)                # shape batch_size * n_messages
+        x = tf.reduce_sum(x, axis=1)                # shape batch_size * n_states
         # The same note as for the RSASpeaker0 holds: a normalization of the probabilities is not necessary as
         # tf random categorical uses the un-normalized log probabilities.
         return x
@@ -142,7 +142,7 @@ class RSAListener0(tf.keras.Model):
         :param data:    states encoded as matrices where the row of the state in question is filled with ones 
                         and all other entries are zero, shape (batch_size, n_states, n_messages)
         :return:        states, so one-hot vectors encoding the selected states for the given messages,
-                        shape (batch_size, n_messages)
+                        shape (batch_size, n_states)
         """
         policy = self.call(data)
         log_probabilities = tf.math.log(policy)
@@ -180,7 +180,7 @@ class RSAListener1(tf.keras.Model):
                         and all other entries are zero, shape (batch_size, n_messages, n_states)
         :param kwargs
         :return:        returns the policies: the distribution over states given the input messages (not normalized),
-                        shape (batch_size, n_messages)
+                        shape (batch_size, n_states)
         """
 
         filtered_input = inputs * tf.transpose(self.lexicon)
@@ -199,7 +199,7 @@ class RSAListener1(tf.keras.Model):
         :param data:    states encoded as matrices where the row of the state in question is filled with ones 
                         and all other entries are zero, shape (batch_size, n_states, n_messages)
         :return:        states, so one-hot vectors encoding the selected states for the given messages,
-                        shape (batch_size, n_messages)
+                        shape (batch_size, n_states)
         """
         policy = self.call(data)
         log_probabilities = tf.math.log(policy)
