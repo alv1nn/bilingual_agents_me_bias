@@ -568,7 +568,7 @@ def plot_rewards_plus_me_index_pragmatic_agent(ablation=False, n_array = [6, 7, 
 
     colors = ['#3cf49c', '#13eac9', '#0dc5d0', '#0986b5', '#055199']
 
-    fig = plt.figure(figsize=(15, 4))
+    fig = plt.figure(figsize=(8, 4))
 
     # n: number of states
     for n_index, n in enumerate(n_array):
@@ -659,7 +659,7 @@ def plot_rewards_plus_me_index_pragmatic_agent(ablation=False, n_array = [6, 7, 
     # if n == 10:
     #box = plt.get_position()
     #plt.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-    plt.legend(['n=6 $I_{ME}$', 'n=7 $I_{ME}$', 'n=8 $I_{ME}$', 'n=9 $I_{ME}$', 'n=10 $I_{ME}$'],
+    plt.legend(['n=' + str(i) for i in n_array],
                 loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
     fig.tight_layout()
 
