@@ -378,6 +378,46 @@ def plot_lexica_single_agent(agent, n_array = [3, 10]):
     colorbar = fig.colorbar(im, cax=cb_ax)
     colorbar.ax.tick_params(labelsize=18)
 
+def save_all_lexica(n = 10):
+    """ Plots the average reward and ME index over time for the single agent setting. The plots include the simulations
+        with three and ten states, where one message was left out from training.
+
+        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
+                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
+        :param n_array:     size 2 array of n values to plot for
+        :param n_ranges:    size 2 array of ranges of epochs to be plotted
+    """
+
+    filename = ('data/bilingual/L1/' + str(n) + '_states/L1_1missing_5.0alpha_')
+
+    # load lexica and rewards until the maximum epoch that should be plotted
+    lexica_all = []
+    for run in range(1, 101):
+        lexica = np.load(filename + 'lexicon_run' + str(run) + '.npy')
+        lexica_all.append(lexica)
+
+    lexica_mean = np.mean(lexica_all, axis=0)
+
+    for epoch in range(100):
+        fig = plt.figure(figsize=(10, 6))
+        plt.subplot(1,1,1)
+        # plot average lexicon
+        im = plt.imshow(lexica_mean[epoch] / np.max(lexica_mean[epoch]), vmin=0., vmax=1.)
+        plt.xticks(range(2*n), [k + 1 for k in range(2*n)], fontsize=16)
+        plt.yticks(range(n), [k + 1 for k in range(n)], fontsize=16)
+        plt.ylabel('state', fontsize=20)
+        plt.xlabel('message', fontsize=20)
+        plt.title(str(n) + ' states, 1 missing \n ', fontsize=25)
+        plt.gcf().text(0.87, 0.9, 'epoch ' + str(epoch), fontsize=16)
+
+        fig.subplots_adjust(bottom=0.0, top=1.0, left=0.2, right=0.98,
+                            wspace=0.0, hspace=0.0)
+        cb_ax = fig.add_axes([0.02, 0.1, 0.01, 0.8])
+        colorbar = fig.colorbar(im, cax=cb_ax)
+        colorbar.ax.tick_params(labelsize=18)
+        
+        fig.savefig('plots/bilingual/L1/10 states/e_' + str(epoch) + '.png')
+        plt.close(fig)
 
 def bar_plot_me_bias(agent, ablation=False):
     """ Plots the listeners' average selection probability for all states given a novel example (that was not part of
@@ -545,6 +585,9 @@ def plot_rewards_plus_me_index_single_agent(ablation=False, n_array = [3, 10], n
             ax.errorbar(indices, mean_me_index, yerr=std_me_index, errorevery=error_step, color=colors[a][1],
                         linewidth=3.0, linestyle='dashed')
 
+            # if (n == 10):
+            #     print(mean_me_index)
+
             plt.xticks(fontsize=20)
             plt.yticks([0, 1], fontsize=20)
             plt.xlabel('epoch', fontsize=25)
@@ -645,6 +688,12 @@ def plot_rewards_plus_me_index_pragmatic_agent(ablation=False, n_array = [6, 7, 
         #std_rewards = np.std(rewards_sorted, axis=1)
         mean_me_index = np.mean(me_index_all, axis=1)
         std_me_index = np.std(me_index_all, axis=1)
+
+        maxval = max(mean_me_index[0:36])
+        maxvalidx = np.squeeze(np.where(mean_me_index == maxval))
+        minval = min(mean_me_index[maxvalidx:100])
+        minvalidx = np.squeeze(np.where(mean_me_index == minval))
+        print(str(n) + "\t" + str(maxvalidx) + ":" + str(maxval) + "; " + str(minvalidx) + ":" + str(minval))
 
         #plt.errorbar(indices, mean_rewards, yerr=std_rewards, errorevery=error_step, color=colors[n_index],
         #            linewidth=3.0)
