@@ -419,6 +419,63 @@ def save_all_lexica(n = 10):
         fig.savefig('plots/bilingual/L1/10 states/e_' + str(epoch) + '.png')
         plt.close(fig)
 
+def save_all_test(n = 10):
+    """ Plots the average reward and ME index over time for the single agent setting. The plots include the simulations
+        with three and ten states, where one message was left out from training.
+
+        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
+                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
+        :param n_array:     size 2 array of n values to plot for
+        :param n_ranges:    size 2 array of ranges of epochs to be plotted
+    """
+
+    filename = ('data/bilingual/L1/' + str(n) + '_states/L1_1missing_5.0alpha_')
+
+    # load lexica and rewards until the maximum epoch that should be plotted
+    lexica_all = []
+    for run in range(1, 101):
+        lexica = np.load(filename + 'lexicon_run' + str(run) + '.npy')
+        lexica_all.append(lexica)
+
+    lexica_all = np.transpose(np.array(lexica_all), (1,0,2,3))
+
+    # generate withheld / test examples
+    n_messages = 2*n
+    n_states = n
+    listener_input = np.zeros((1, n_messages, n_states), dtype=np.float32)
+    listener_input[0, n - 1, :] = np.ones((1, n_states), dtype=np.float32)
+    
+
+    for epoch in range(100):
+        p_missing = []
+
+        for l in lexica_all[epoch]:
+            listener = RSAListener1(n_states, n_messages, l, alpha=5.)
+            # calculate the policies for the state that was excluded from training in case one state was excluded
+            policy, _ = listener.get_states(listener_input)
+            p_missing.append(np.squeeze(policy[:]))
+
+        p_missing = np.squeeze(np.array(p_missing))
+        normalized_p = p_missing / np.expand_dims(np.sum(p_missing, axis=1), axis=1)
+
+        fig = plt.figure(figsize=(10, 6))
+        plt.subplot(1,1,1)
+        mean_p_missing = np.mean(normalized_p, axis=0)
+        std_p_missing = np.std(normalized_p, axis=0)
+        plt.bar(range(1, n + 1), mean_p_missing, yerr=std_p_missing, color='blue', edgecolor='k',
+                width=0.6, capsize=3, alpha=1)
+
+        plt.ylim([-0.1, 1.1])
+        plt.xlabel('state', fontsize=20)
+        plt.ylabel('selection probability', fontsize=20)
+        plt.xticks(range(1, n + 1), [k for k in range(1, n + 1)], fontsize=18)
+        plt.yticks(fontsize=18)
+        plt.title(str(n) + ' states, 1 missing', fontsize=20)
+        plt.gcf().text(0.87, 0.9, 'epoch ' + str(epoch), fontsize=16)
+        
+        fig.savefig('plots/bilingual/L1/10 states/b_' + str(epoch) + '.png')
+        plt.close(fig)
+
 def bar_plot_me_bias(agent, ablation=False):
     """ Plots the listeners' average selection probability for all states given a novel example (that was not part of
         the training. For the single agent setting a novel example is a message that was not part of training, for the
