@@ -748,7 +748,7 @@ def plot_rewards_plus_me_index_lang(n_epoch = 100):
                 loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
     fig.tight_layout()
 
-def plot_rewards_plus_me_index_blocked():
+def plot_rewards_plus_me_index_blocked(e=False):
     """ Plots the average reward and ME index over time for the single agent setting. The plots include the simulations
         with three and ten states, where one message was left out from training.
 
@@ -774,9 +774,14 @@ def plot_rewards_plus_me_index_blocked():
 
     ax = fig.add_subplot(1, 1, 1)
 
-    for b, blocked in enumerate(['bilingual', 'bilingual_blocked']):
+    estr = '_e' if e else ''
 
-        filename = ('data/' + blocked + '/L1/10_states/L1_1missing_5.0alpha_')
+    for b, blocked in enumerate(['bilingual', 'bilingual_blocked' + estr]):
+
+        if b==1:
+            filename = ('data/' + blocked + '/L1/10_states/2_blocks/L1_1missing_5.0alpha_')
+        else:
+            filename = ('data/' + blocked + '/L1/10_states/L1_1missing_5.0alpha_')
 
         # load lexica and rewards until the maximum epoch that should be plotted
         lexica_all = []
@@ -836,6 +841,99 @@ def plot_rewards_plus_me_index_blocked():
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
     ax.legend(['interleaved reward', 'interleaved $I_{ME}$', 'blocked reward', 'blocked $I_{ME}$'],
+                loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
+    fig.tight_layout()
+
+def plot_rewards_plus_me_index_blocked_agent(e_array = [1, 2, 4, 8, 16]):
+    """ Plots the average reward and ME index over time for the single agent setting (pragmatic agent only). 
+        The plots include the simulations with n_array states, where one message was left out from training.
+
+        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
+                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
+        :param n_array:     array of n values to plot for
+    """
+
+    colors = ['#f1cc65', '#c8a397', '#9f7e9d', '#735b9b', '#3d3b96']
+
+    fig = plt.figure(figsize=(10, 4))
+    n = 10
+
+    # n: number of states
+    for e_index, e in enumerate(e_array):
+
+        n_messages = 2*n
+        n_states = n
+
+        # which epochs should be plotted for three and ten states
+        indices = range(100)
+        # at what step size the error bars should be plotted for three and ten states
+        error_step = 10
+
+        # ax = fig.add_subplot(1, 2, n_index + 1)
+
+        # for a, agent in enumerate(['L0', 'L1']):
+
+        if e == 1:
+            filename = ('data/bilingual/L1/10_states/L1_1missing_5.0alpha_')
+        else:
+            filename = ('data/bilingual_blocked_e/L1/10_states/' + str(e) + '_blocks/L1_1missing_5.0alpha_')
+
+        # load lexica and rewards until the maximum epoch that should be plotted
+        lexica_all = []
+        rewards_all = []
+        for run in range(1, 101):
+            rewards = np.load(filename + 'rewards_run' + str(run) + '.npy')
+            lexica = np.load(filename + 'lexicon_run' + str(run) + '.npy')
+            lexica_all.append(lexica[indices])
+            rewards_all.append(rewards[indices])
+
+        # determine the test input as the example that was left out from training
+        agent_input = np.zeros((1, n_messages, n_states), dtype=np.float32)
+        agent_input[0, n - 1, :] = np.ones((1, n_states), dtype=np.float32)
+
+        # re-sort rewards and indices such that the values of all agents are pooled together per time step
+        # similarly calculate the ME index for every agent at every time step and pool per time step
+        me_index_all = np.zeros((len(indices), 100))
+        rewards_sorted = np.zeros((len(indices), 100))
+
+        for idx in indices:
+            me_index = np.zeros((100))  # unnormalized ME index
+
+            for run in range(100):
+
+                rewards_sorted[idx, run] = rewards_all[run][idx]
+                lexicon = lexica_all[run][idx]
+
+                listener = RSAListener1(n_states, n_messages, lexicon, alpha=5.)
+                policy, _ = listener.get_states(agent_input)
+                policy = np.squeeze(policy[:])
+                policy = policy / np.sum(policy)
+                me_index[run] = policy[-1]
+
+            # normalize the ME index for this agent and time step and append to the ME indices of the other
+            # agents for that time step
+            me_index_all[idx, :] = (me_index - (1 / n)) / ((n - 1) / n)
+
+        # plot mean and stds for the rewards and ME indices over time
+        #mean_rewards = np.mean(rewards_sorted, axis=1)
+        #std_rewards = np.std(rewards_sorted, axis=1)
+        mean_me_index = np.mean(me_index_all, axis=1)
+        std_me_index = np.std(me_index_all, axis=1)
+
+        #plt.errorbar(indices, mean_rewards, yerr=std_rewards, errorevery=error_step, color=colors[n_index],
+        #            linewidth=3.0)
+        plt.errorbar(indices, mean_me_index, yerr=std_me_index, errorevery=error_step, color=colors[e_index],
+                    linewidth=3.0, linestyle='dashed')
+
+        plt.xticks(fontsize=20)
+        plt.yticks([0, 1], fontsize=20)
+        plt.xlabel('epoch', fontsize=25)
+        plt.ylabel('mean ME index', fontsize=25)
+
+    # if n == 10:
+    #box = plt.get_position()
+    #plt.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    plt.legend(['interleaved'] + [str(i) + ' blocks' for i in e_array[1:]],
                 loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
     fig.tight_layout()
 
