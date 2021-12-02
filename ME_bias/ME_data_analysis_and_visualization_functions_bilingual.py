@@ -461,6 +461,50 @@ def save_all_lexica_be(b = 2):
         fig.savefig('plots/bilingual_blocked_e/L1/10 states/' + str(b) + '_blocks/e_' + str(epoch) + '.png')
         plt.close(fig)
 
+def lexica_be_correl(b_array = [1, 2, 4, 8, 16]):
+    """ 
+    """
+
+    lexica_means = []
+
+    for b in b_array:
+        if b==1:
+            filename = ('data/bilingual/L1/10_states/L1_1missing_5.0alpha_')
+        else:
+            filename = ('data/bilingual_blocked_e/L1/10_states/' + str(b) + '_blocks/L1_1missing_5.0alpha_')
+        # load lexica and rewards until the maximum epoch that should be plotted
+        lexica_all = []
+        for run in range(1, 101):
+            lexica = np.load(filename + 'lexicon_run' + str(run) + '.npy')
+            lexica_all.append(lexica[-1])
+
+        lexica_mean = np.mean(lexica_all, axis=0)
+        lexica_mean = lexica_mean / np.max(lexica_mean)
+        lexica_means.append(lexica_mean)
+    
+        if b!=1:
+            print(str(b) + '\t' + str(np.corrcoef(lexica_means[0].flatten(), lexica_mean.flatten())[0,1]))
+
+def lexica_bl_correl():
+    """ 
+    """
+
+    lexica_means = []
+
+    for b in ['bilingual', 'bilingual_blocked']:
+        filename = ('data/' + b + '/L1/10_states/L1_1missing_5.0alpha_')
+        # load lexica and rewards until the maximum epoch that should be plotted
+        lexica_all = []
+        for run in range(1, 101):
+            lexica = np.load(filename + 'lexicon_run' + str(run) + '.npy')
+            lexica_all.append(lexica[-1])
+
+        lexica_mean = np.mean(lexica_all, axis=0)
+        lexica_mean = lexica_mean / np.max(lexica_mean)
+        lexica_means.append(lexica_mean)
+    
+    print(str(np.corrcoef(lexica_means[0].flatten(), lexica_means[1].flatten())[0,1]))
+
 def save_all_test(n = 10):
     """ Plots the average reward and ME index over time for the single agent setting. The plots include the simulations
         with three and ten states, where one message was left out from training.
@@ -800,7 +844,7 @@ def plot_rewards_plus_me_index_blocked(e=False):
         :param n_ranges:    size 2 array of ranges of epochs to be plotted
     """
 
-    colors = [['red', 'red'], ['blue', 'blue']]
+    colors = [['blue', 'blue'], ['purple', 'purple']]
 
     fig = plt.figure(figsize=(8, 4))
 
@@ -816,14 +860,14 @@ def plot_rewards_plus_me_index_blocked(e=False):
 
     ax = fig.add_subplot(1, 1, 1)
 
-    estr = '_e' if e else ''
+    for b in [0,1]:
 
-    for b, blocked in enumerate(['bilingual', 'bilingual_blocked' + estr]):
-
-        if b==1:
-            filename = ('data/' + blocked + '/L1/10_states/2_blocks/L1_1missing_5.0alpha_')
+        if b==0:
+            filename = ('data/bilingual/L1/10_states/L1_1missing_5.0alpha_')
+        elif e:
+            filename = ('data/bilingual_blocked_e/L1/10_states/2_blocks/L1_1missing_5.0alpha_')
         else:
-            filename = ('data/' + blocked + '/L1/10_states/L1_1missing_5.0alpha_')
+            filename = ('data/bilingual_blocked/L1/10_states/L1_1missing_5.0alpha_')
 
         # load lexica and rewards until the maximum epoch that should be plotted
         lexica_all = []
