@@ -419,6 +419,48 @@ def save_all_lexica(n = 10):
         fig.savefig('plots/bilingual/L1/10 states/e_' + str(epoch) + '.png')
         plt.close(fig)
 
+def save_all_lexica_be(b = 2):
+    """ Plots the average reward and ME index over time for the single agent setting. The plots include the simulations
+        with three and ten states, where one message was left out from training.
+
+        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
+                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
+        :param n_array:     size 2 array of n values to plot for
+        :param n_ranges:    size 2 array of ranges of epochs to be plotted
+    """
+
+    n = 10
+    filename = ('data/bilingual_blocked_e/L1/10_states/' + str(b) + '_blocks/L1_1missing_5.0alpha_')
+
+    # load lexica and rewards until the maximum epoch that should be plotted
+    lexica_all = []
+    for run in range(1, 101):
+        lexica = np.load(filename + 'lexicon_run' + str(run) + '.npy')
+        lexica_all.append(lexica)
+
+    lexica_mean = np.mean(lexica_all, axis=0)
+
+    for epoch in range(100):
+        fig = plt.figure(figsize=(10, 6))
+        plt.subplot(1,1,1)
+        # plot average lexicon
+        im = plt.imshow(lexica_mean[epoch] / np.max(lexica_mean[epoch]), vmin=0., vmax=1.)
+        plt.xticks(range(2*n), [k + 1 for k in range(2*n)], fontsize=16)
+        plt.yticks(range(n), [k + 1 for k in range(n)], fontsize=16)
+        plt.ylabel('state', fontsize=20)
+        plt.xlabel('message', fontsize=20)
+        plt.title(str(n) + ' states, 1 missing \n ', fontsize=25)
+        plt.gcf().text(0.87, 0.9, 'epoch ' + str(epoch), fontsize=16)
+
+        fig.subplots_adjust(bottom=0.0, top=1.0, left=0.2, right=0.98,
+                            wspace=0.0, hspace=0.0)
+        cb_ax = fig.add_axes([0.02, 0.1, 0.01, 0.8])
+        colorbar = fig.colorbar(im, cax=cb_ax)
+        colorbar.ax.tick_params(labelsize=18)
+        
+        fig.savefig('plots/bilingual_blocked_e/L1/10 states/' + str(b) + '_blocks/e_' + str(epoch) + '.png')
+        plt.close(fig)
+
 def save_all_test(n = 10):
     """ Plots the average reward and ME index over time for the single agent setting. The plots include the simulations
         with three and ten states, where one message was left out from training.
@@ -667,7 +709,7 @@ def plot_rewards_plus_me_index_lang(n_epoch = 100):
         :param n_ranges:    size 2 array of ranges of epochs to be plotted
     """
 
-    colors = [['red', 'red'], ['blue', 'blue']]
+    colors = [['teal', 'teal'], ['blue', 'blue']]
 
     fig = plt.figure(figsize=(10, 4))
 
@@ -937,7 +979,7 @@ def plot_rewards_plus_me_index_blocked_agent(e_array = [1, 2, 4, 8, 16]):
                 loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
     fig.tight_layout()
 
-def plot_rewards_plus_me_index_pragmatic_agent(ablation=False, n_array = [6, 7, 8, 9, 10]):
+def plot_rewards_plus_me_index_pragmatic_agent(ablation=False, n_array = [6, 7, 8, 9, 10], e_range = 100):
     """ Plots the average reward and ME index over time for the single agent setting (pragmatic agent only). 
         The plots include the simulations with n_array states, where one message was left out from training.
 
@@ -946,7 +988,7 @@ def plot_rewards_plus_me_index_pragmatic_agent(ablation=False, n_array = [6, 7, 
         :param n_array:     array of n values to plot for
     """
 
-    colors = ['#3cf49c', '#13eac9', '#0dc5d0', '#0986b5', '#055199']
+    colors = ['#3cf49c', '#13eac9', '#0dc5d0', '#0986b5', '#055199', '#022B88', '#0B0065', '#000030']
 
     fig = plt.figure(figsize=(8, 4))
 
@@ -957,7 +999,7 @@ def plot_rewards_plus_me_index_pragmatic_agent(ablation=False, n_array = [6, 7, 
         n_states = n
 
         # which epochs should be plotted for three and ten states
-        indices = range(100)
+        indices = range(e_range)
         # at what step size the error bars should be plotted for three and ten states
         error_step = 10
 
@@ -1045,7 +1087,7 @@ def plot_rewards_plus_me_index_pragmatic_agent(ablation=False, n_array = [6, 7, 
     # if n == 10:
     #box = plt.get_position()
     #plt.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-    plt.legend(['n=' + str(i) for i in n_array],
+    plt.legend(['N=' + str(i) for i in n_array],
                 loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
     fig.tight_layout()
 
