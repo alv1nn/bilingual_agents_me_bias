@@ -834,7 +834,7 @@ def plot_rewards_plus_me_index_lang(n_epoch = 100):
                 loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
     fig.tight_layout()
 
-def plot_rewards_plus_me_index_blocked(e=False):
+def plot_rewards_plus_me_index_blocked(e=False, b=2):
     """ Plots the average reward and ME index over time for the single agent setting. The plots include the simulations
         with three and ten states, where one message was left out from training.
 
@@ -846,7 +846,7 @@ def plot_rewards_plus_me_index_blocked(e=False):
 
     colors = [['blue', 'blue'], ['purple', 'purple']]
 
-    fig = plt.figure(figsize=(8, 4))
+    fig = plt.figure(figsize=(9, 4))
 
     n = 10
 
@@ -860,12 +860,12 @@ def plot_rewards_plus_me_index_blocked(e=False):
 
     ax = fig.add_subplot(1, 1, 1)
 
-    for b in [0,1]:
+    for bl in [0,1]:
 
-        if b==0:
+        if bl==0:
             filename = ('data/bilingual/L1/10_states/L1_1missing_5.0alpha_')
         elif e:
-            filename = ('data/bilingual_blocked_e/L1/10_states/2_blocks/L1_1missing_5.0alpha_')
+            filename = ('data/bilingual_blocked_e/L1/10_states/' + str(b) + '_blocks/L1_1missing_5.0alpha_')
         else:
             filename = ('data/bilingual_blocked/L1/10_states/L1_1missing_5.0alpha_')
 
@@ -911,10 +911,13 @@ def plot_rewards_plus_me_index_blocked(e=False):
         mean_me_index = np.mean(me_index_all, axis=1)
         std_me_index = np.std(me_index_all, axis=1)
 
-        ax.errorbar(indices, mean_rewards, yerr=std_rewards, errorevery=error_step, color=colors[b][0],
+        ax.errorbar(indices, mean_rewards, yerr=std_rewards, errorevery=error_step, color=colors[bl][0],
                     linewidth=3.0)
-        ax.errorbar(indices, mean_me_index, yerr=std_me_index, errorevery=error_step, color=colors[b][1],
+        ax.errorbar(indices, mean_me_index, yerr=std_me_index, errorevery=error_step, color=colors[bl][1],
                     linewidth=3.0, linestyle='dashed')
+        
+        if bl:
+            print(mean_rewards)
 
         # if (n == 10):
         #     print(mean_me_index)
