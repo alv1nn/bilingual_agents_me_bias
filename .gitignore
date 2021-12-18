@@ -3,3 +3,4 @@ __pycache__
 data/
 ME_bias/plots/bilingual/
 ME_bias/plots/bilingual_blocked_e/
+*_old.*

@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 import numpy as np
-from RSA_communication_agents import RSAListener0, RSASpeaker0, RSAListener1, RSASpeaker1
+from RSA_communication_agents import RSAListener0, RSAListener1
 
 
 def get_test_input_policy_single_agent(n, agent, ablation=False):
@@ -88,131 +88,10 @@ def get_test_input_policy_single_agent(n, agent, ablation=False):
     return return_values
 
 
-def get_test_input_policy_two_agents(n, agent, ablation=False):
-    """ For the two agent setting.
-        Get the listeners' policy, so probabilities of selecting every possible state,
-        when the speaker is presented with an input state that was withheld from training.
-        The policies are calculated for the case that one state was excluded from training as well as
-        for both states separately in case two states were excluded from training.
-        :param n:       number of states and messages (in total)
-        :param agent:   'L0_S0' literal speaker-listener combination
-                        'L1_S1' pragmatic speaker-listener combination
-        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
-                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
-        :return [p_missing, p_missing1, p_missing2]:    policies for all agents for the case that one state was
-                                                        excluded from training (p_missing), or that two states were
-                                                        excluded from training (p_missing1, p_missing2)
-    """
-
-    agent_body = agent  # agent body determines whether the lexica of literal or pragmatic agents are used
-    agent_head = agent  # agent head determined whether the literal or pragmatic reasoning is used at test time
-
-    # ME: missing examples
-    for ME in [1, 2]:
-
-        # set file path
-        if agent == 'L0_S0':
-            filename = 'data/communication/' + str(n) + '_states/' + agent_body + '_' + str(ME) + 'missing_'
-        elif agent == 'L1_S1':
-            filename = 'data/communication/' + str(n) + '_states/' + agent_body + '_' + str(ME) + 'missing_5.0alpha_'
-
-        # load final lexica for all speakers and listeners
-        lexica_all_L = []
-        lexica_all_S = []
-        for run in range(1, 101):
-            lexica_L = np.load(filename + 'lexicon_L_run' + str(run) + '.npy')
-            lexica_S = np.load(filename + 'lexicon_S_run' + str(run) + '.npy')
-            lexica_all_L.append(lexica_L[-1])
-            lexica_all_S.append(lexica_S[-1])
-
-        # generate withheld / test examples
-        if ME == 1:
-            speaker_input = np.zeros((1, n, n), dtype=np.float32)
-            speaker_input[0, n - 1, :] = np.ones((1, n), dtype=np.float32)
-            p_missing = []
-        elif ME == 2:
-            speaker_input1 = np.zeros((1, n, n), dtype=np.float32)
-            speaker_input2 = np.zeros((1, n, n), dtype=np.float32)
-            speaker_input1[0, n - 1, :] = np.ones((1, n), dtype=np.float32)
-            speaker_input2[0, 0, :] = np.ones((1, n), dtype=np.float32)
-            p_missing1 = []
-            p_missing2 = []
-
-        # determine whether pragmatic or literal reasoning is used at test time
-        if ablation and agent_body == 'L0_S0':
-            agent_head = 'L1_S1'
-        if ablation and agent_body == 'L1_S1':
-            agent_head = 'L0_S0'
-
-        # Calculating the policy of the listener when the speaker is presented with one of the test states is
-        # done in the following way:
-        # 1) calculate the speaker's policy for that input state (conditional distribution over messages)
-        # 2) calculate the listener's s policy for any input message (conditional distributions over states)
-        # 3) multiply the speaker's probability of selecting a state given a message with the speaker's
-        #    probability of producing that message
-        # 4) sum up all the probabilities from 3) to obtain the expected probability of the listener for selecting
-        #    the different states given the speaker is presented with a test input state.
-
-        # iterate over all speaker-listener combinations
-        for l_S, l_L in zip(lexica_all_S, lexica_all_L):
-            if agent_head == 'L0_S0':
-                speaker = RSASpeaker0(n, n, l_S)
-                listener = RSAListener0(n, n, l_L)
-            elif agent_head == 'L1_S1':
-                speaker = RSASpeaker1(n, n, l_S, alpha=5.)
-                listener = RSAListener1(n, n, l_L, alpha=5.)
-
-            # calculate the policies for the state that was excluded from training in case one state was excluded
-            if ME == 1:
-                # do step 1)
-                policy, _ = speaker.get_messages(speaker_input)
-                policy = np.squeeze(policy[:])
-                policy = policy / np.sum(policy)
-                # do step 2)
-                selections = np.zeros((n, n))
-                for input_idx in range(n):
-                    listener_input = np.zeros((1, n, n))
-                    listener_input[0, input_idx, :] = np.ones((1, n))
-                    selection, _ = listener.get_states(listener_input)
-                    selection = np.squeeze(selection[:])
-                    selection = selection / np.sum(selection)
-                    # do step 3)
-                    selections[input_idx, :] = policy[input_idx] * selection
-                # do step 4)
-                p_missing.append(np.sum(selections, axis=0))
-
-            # calculate the policies for the states that were excluded from training separately,
-            # in case two states were excluded
-            elif ME == 2:
-                # do step 1)
-                policy1, _ = speaker.get_messages(speaker_input1)
-                policy2, _ = speaker.get_messages(speaker_input2)
-                for p, policy in enumerate([policy1, policy2]):
-                    policy = np.squeeze(policy[:])
-                    policy = policy / np.sum(policy)
-                    # do step 2)
-                    selections = np.zeros((n, n))
-                    for input_idx in range(n):
-                        listener_input = np.zeros((1, n, n))
-                        listener_input[0, input_idx, :] = np.ones((1, n))
-                        selection, _ = listener.get_states(listener_input)
-                        selection = np.squeeze(selection[:])
-                        selection = selection / np.sum(selection)
-                        # do step 3)
-                        selections[input_idx, :] = policy[input_idx] * selection
-                    # do step 4)
-                    [p_missing1, p_missing2][p].append(np.sum(selections, axis=0))
-
-    # the values are already normalized and can be returned as probabilities
-    return np.array(p_missing), np.array(p_missing1), np.array(p_missing2)
-
-
 def me_index(agent, ablation=False):
-    """ Calculate the ME index as defined in the paper for single or two agent setting.
-    :param agent:       'L0' literal listener (single agent setting)
-                        'L1' pragmatic listener (single agent setting)
-                        'L0_S0' literal speaker-listener combination (two agent setting)
-                        'L1_S1' pragmatic speaker-listener combination (two agent setting)
+    """ Calculate the ME index as defined in the paper for the single agent setting.
+    :param agent:       'L0' literal listener
+                        'L1' pragmatic listener
     :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
                         the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
     """
@@ -220,10 +99,7 @@ def me_index(agent, ablation=False):
     for i, n in enumerate([3, 10]):
         # calculate ME index for one input state/message excluded from training
 
-        if agent == 'L0' or agent == 'L1':
-            p_missing, p_missing1, p_missing2 = get_test_input_policy_single_agent(n, agent, ablation=ablation)
-        elif agent == 'L0_S0' or agent == 'L1_S1':
-            p_missing, p_missing1, p_missing2 = get_test_input_policy_two_agents(n, agent, ablation=ablation)
+        p_missing, p_missing1, p_missing2 = get_test_input_policy_single_agent(n, agent, ablation=ablation)
 
         me1 = (p_missing[:, -1] - 1 / n) / ((n - 1) / n)
         mean_me1 = np.mean(me1)
@@ -247,10 +123,8 @@ def plot_rewards(agent, n=3, n_epochs=20):
         or state (two agent setting) excluded from training (K=1). The right plot is for the agents that were
         trained with two input messages or states excluded from training (K=2). The average is shown in a thick line,
         the range from minimal to maximal values as shaded region.
-        :param agent:       'L0' literal listener (single agent setting)
-                            'L1' pragmatic listener (single agent setting)
-                            'L0_S0' literal speaker-listener combination (two agent setting)
-                            'L1_S1' pragmatic speaker-listener combination (two agent setting)
+        :param agent:       'L0' literal listener
+                            'L1' pragmatic listener
         :param n:           number of states, here 3 or 10
         :param n_epochs:    number of epochs you would like to plot
     """
@@ -264,12 +138,6 @@ def plot_rewards(agent, n=3, n_epochs=20):
     elif agent == 'L1':
         filename1 = ('data/bilingual/L1/' + str(n) + '_states/' + agent + '_1' + 'missing_5.0alpha_rewards_run')
         filename2 = ('data/bilingual/L1/' + str(n) + '_states/' + agent + '_2' + 'missing_5.0alpha_rewards_run')
-    if agent == 'L0_S0':
-        filename1 = 'data/communication/' + str(n) + '_states/' + agent + '_1missing_rewards_run'
-        filename2 = 'data/communication/' + str(n) + '_states/' + agent + '_2missing_rewards_run'
-    elif agent == 'L1_S1':
-        filename1 = ('data/communication/' + str(n) + '_states/' + agent + '_1missing_5.0alpha_rewards_run')
-        filename2 = ('data/communication/' + str(n) + '_states/' + agent + '_2missing_5.0alpha_rewards_run')
 
     rewards_all_ME1 = []
     rewards_all_ME2 = []
@@ -313,8 +181,8 @@ def plot_lexica_single_agent(agent, n_array = [3, 10]):
         K being the number of messages withheld from training.
         Note that plotting the average lexica only makes sense in the single agent setting as the state-message
         mapping can evolve differently between different speaker-listener pairs in the two agent setting.
-        :param agent:   'L0' literal listener
-                        'L1' pragmatic listener
+        :param agent:   'L0': literal listener; 'L1': pragmatic listener
+        :param n_array: length-2 array of number of states 
     """
 
     fig = plt.figure(figsize=(20, 4))
@@ -378,17 +246,16 @@ def plot_lexica_single_agent(agent, n_array = [3, 10]):
     colorbar = fig.colorbar(im, cax=cb_ax)
     colorbar.ax.tick_params(labelsize=18)
 
-def save_all_lexica(n = 10):
-    """ Plots the average reward and ME index over time for the single agent setting. The plots include the simulations
-        with three and ten states, where one message was left out from training.
-
-        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
-                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
-        :param n_array:     size 2 array of n values to plot for
-        :param n_ranges:    size 2 array of ranges of epochs to be plotted
+def save_all_lexica(n=10, blocked=0, b=1):
+    """ Saves the mean lexicon at each epoch for the single agent setting.
+        :param n:           number of states
+        :param blocked:     0: not blocked; 1: blocked within epochs; 2: blocked across epochs
+        :param b:           number of blocks
     """
 
-    filename = ('data/bilingual/L1/' + str(n) + '_states/L1_1missing_5.0alpha_')
+    b_str = '_blocked' if blocked == 1 else '_blocked_e' if blocked == 2 else ''
+    bn_str = str(b) + '_blocks/' if blocked > 0 else ''
+    filename = 'data/bilingual' + b_str + '/L1/' + str(n) + '_states/' + bn_str + 'L1_1missing_5.0alpha_'
 
     # load lexica and rewards until the maximum epoch that should be plotted
     lexica_all = []
@@ -416,62 +283,24 @@ def save_all_lexica(n = 10):
         colorbar = fig.colorbar(im, cax=cb_ax)
         colorbar.ax.tick_params(labelsize=18)
         
-        fig.savefig('plots/bilingual/L1/10 states/e_' + str(epoch) + '.png')
+        fig.savefig('plots/bilingual' + b_str + '/L1/' + str(n) + '_states/' + bn_str + 'e_' + str(epoch) + '.png')
         plt.close(fig)
 
-def save_all_lexica_be(b = 2):
-    """ Plots the average reward and ME index over time for the single agent setting. The plots include the simulations
-        with three and ten states, where one message was left out from training.
-
-        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
-                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
-        :param n_array:     size 2 array of n values to plot for
-        :param n_ranges:    size 2 array of ranges of epochs to be plotted
-    """
-
-    n = 10
-    filename = ('data/bilingual_blocked_e/L1/10_states/' + str(b) + '_blocks/L1_1missing_5.0alpha_')
-
-    # load lexica and rewards until the maximum epoch that should be plotted
-    lexica_all = []
-    for run in range(1, 101):
-        lexica = np.load(filename + 'lexicon_run' + str(run) + '.npy')
-        lexica_all.append(lexica)
-
-    lexica_mean = np.mean(lexica_all, axis=0)
-
-    for epoch in range(100):
-        fig = plt.figure(figsize=(10, 6))
-        plt.subplot(1,1,1)
-        # plot average lexicon
-        im = plt.imshow(lexica_mean[epoch] / np.max(lexica_mean[epoch]), vmin=0., vmax=1.)
-        plt.xticks(range(2*n), [k + 1 for k in range(2*n)], fontsize=16)
-        plt.yticks(range(n), [k + 1 for k in range(n)], fontsize=16)
-        plt.ylabel('state', fontsize=20)
-        plt.xlabel('message', fontsize=20)
-        plt.title(str(n) + ' states, 1 missing \n ', fontsize=25)
-        plt.gcf().text(0.87, 0.9, 'epoch ' + str(epoch), fontsize=16)
-
-        fig.subplots_adjust(bottom=0.0, top=1.0, left=0.2, right=0.98,
-                            wspace=0.0, hspace=0.0)
-        cb_ax = fig.add_axes([0.02, 0.1, 0.01, 0.8])
-        colorbar = fig.colorbar(im, cax=cb_ax)
-        colorbar.ax.tick_params(labelsize=18)
-        
-        fig.savefig('plots/bilingual_blocked_e/L1/10 states/' + str(b) + '_blocks/e_' + str(epoch) + '.png')
-        plt.close(fig)
-
-def lexica_be_correl(b_array = [1, 2, 4, 8, 16]):
-    """ 
+def lexica_correl(n=10, blocked=2, b_array = [2, 4, 8, 16]):
+    """ Calculates correlation in mean final lexica between not blocked condition and blocked condition.
+        :param n:           number of states
+        :param blocked:     1: blocked within epochs; 2: blocked across epochs
+        :param b_array:     array of number of blocks
     """
 
     lexica_means = []
+    b_str = '_blocked' if blocked == 1 else '_blocked_e' if blocked == 2 else ''
 
-    for b in b_array:
+    for b in [1] + b_array:
         if b==1:
-            filename = ('data/bilingual/L1/10_states/L1_1missing_5.0alpha_')
+            filename = ('data/bilingual/L1/' + str(n) + '_states/L1_1missing_5.0alpha_')
         else:
-            filename = ('data/bilingual_blocked_e/L1/10_states/' + str(b) + '_blocks/L1_1missing_5.0alpha_')
+            filename = ('data/bilingual' + b_str + '/L1/' + str(n) + '_states/' + str(b) + '_blocks/L1_1missing_5.0alpha_')
         # load lexica and rewards until the maximum epoch that should be plotted
         lexica_all = []
         for run in range(1, 101):
@@ -485,34 +314,9 @@ def lexica_be_correl(b_array = [1, 2, 4, 8, 16]):
         if b!=1:
             print(str(b) + '\t' + str(np.corrcoef(lexica_means[0].flatten(), lexica_mean.flatten())[0,1]))
 
-def lexica_bl_correl():
-    """ 
-    """
-
-    lexica_means = []
-
-    for b in ['bilingual', 'bilingual_blocked']:
-        filename = ('data/' + b + '/L1/10_states/L1_1missing_5.0alpha_')
-        # load lexica and rewards until the maximum epoch that should be plotted
-        lexica_all = []
-        for run in range(1, 101):
-            lexica = np.load(filename + 'lexicon_run' + str(run) + '.npy')
-            lexica_all.append(lexica[-1])
-
-        lexica_mean = np.mean(lexica_all, axis=0)
-        lexica_mean = lexica_mean / np.max(lexica_mean)
-        lexica_means.append(lexica_mean)
-    
-    print(str(np.corrcoef(lexica_means[0].flatten(), lexica_means[1].flatten())[0,1]))
-
 def save_all_test(n = 10):
-    """ Plots the average reward and ME index over time for the single agent setting. The plots include the simulations
-        with three and ten states, where one message was left out from training.
-
-        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
-                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
-        :param n_array:     size 2 array of n values to plot for
-        :param n_ranges:    size 2 array of ranges of epochs to be plotted
+    """ Saves all mean ME test values at each epoch for the single agent setting.
+        :param n:   number of states
     """
 
     filename = ('data/bilingual/L1/' + str(n) + '_states/L1_1missing_5.0alpha_')
@@ -571,8 +375,6 @@ def bar_plot_me_bias(agent, ablation=False):
         excluded from training.
         :param agent:       'L0' literal listener (single agent setting)
                             'L1' pragmatic listener (single agent setting)
-                            'L0_S0' literal speaker-listener combination (two agent setting)
-                            'L1_S1' pragmatic speaker-listener combination (two agent setting)
         :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
                             the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
     """
@@ -582,10 +384,7 @@ def bar_plot_me_bias(agent, ablation=False):
     # n: number of states and messages
     for i, n in enumerate([3, 10]):
 
-        if agent == 'L0' or agent == 'L1':
-            p_missing, p_missing1, p_missing2 = get_test_input_policy_single_agent(n, agent, ablation=ablation)
-        elif agent == 'L0_S0' or agent == 'L1_S1':
-            p_missing, p_missing1, p_missing2 = get_test_input_policy_two_agents(n, agent, ablation=ablation)
+        p_missing, p_missing1, p_missing2 = get_test_input_policy_single_agent(n, agent, ablation=ablation)
 
         # ME: missing examples
         for j, ME in enumerate([1, 2]):
@@ -635,634 +434,127 @@ def bar_plot_me_bias(agent, ablation=False):
             plt.title(str(n) + ' states, ' + str(ME) + ' missing', fontsize=20)
 
 
-def plot_rewards_plus_me_index_single_agent(ablation=False, n_array = [3, 10], n_ranges = [26, 41]):
-    """ Plots the average reward and ME index over time for the single agent setting. The plots include the simulations
-        with three and ten states, where one message was left out from training.
-
-        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
-                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
-        :param n_array:     size 2 array of n values to plot for
-        :param n_ranges:    size 2 array of ranges of epochs to be plotted
+def get_lexica_and_rewards(filename, indices, n, agent_head=1, n_lang=2):
+    """ Helper function to get all ME indices and rewards.
+        :param filename:    filename to get saved data from
+        :param indices:     indices of epochs to extract data from
+        :param n:           number of states
+        :param agent_head:  reasoning level of agent during testing
+        :param n_lang:      1: monolingual; 2: bilingual
     """
-
-    colors = [['red', 'red'], ['blue', 'blue']]
-
-    fig = plt.figure(figsize=(15, 4))
-
-    # n: number of states
-    for n_index, n in enumerate(n_array):
-
-        n_messages = 2*n
-        n_states = n
-
-        # which epochs should be plotted for three and ten states
-        indices = [list(range(n_ranges[0])), list(range(n_ranges[1]))][n_index]
-        # at what step size the error bars should be plotted for three and ten states
-        error_step = np.floor_divide(n_ranges, 10)[n_index]
-
-        ax = fig.add_subplot(1, 2, n_index + 1)
-
-        for a, agent in enumerate(['L0', 'L1']):
-
-            # determine which lexica to evaluate and which reasoning ability at test time
-            agent_body = agent  # agent body determines whether the lexica of literal or pragmatic agents are used
-            agent_head = agent  # agent head determined whether the literal or pragmatic reasoning is used at test time
-            if ablation and agent_body == 'L0':
-                agent_head = 'L1'
-            elif ablation and agent_body == 'L1':
-                agent_head = 'L0'
-
-            # set file path
-            if agent_body == 'L0':
-                filename = ('data/bilingual/L0/' + str(n) + '_states/' + agent_body + '_1missing_')
-            elif agent_body == 'L1':
-                filename = ('data/bilingual/L1/' + str(n) + '_states/' + agent_body + '_1missing_5.0alpha_')
-
-            # load lexica and rewards until the maximum epoch that should be plotted
-            lexica_all = []
-            rewards_all = []
-            for run in range(1, 101):
-                rewards = np.load(filename + 'rewards_run' + str(run) + '.npy')
-                lexica = np.load(filename + 'lexicon_run' + str(run) + '.npy')
-                lexica_all.append(lexica[indices])
-                rewards_all.append(rewards[indices])
-
-            # determine the test input as the example that was left out from training
-            agent_input = np.zeros((1, n_messages, n_states), dtype=np.float32)
-            agent_input[0, n - 1, :] = np.ones((1, n_states), dtype=np.float32)
-
-            # re-sort rewards and indices such that the values of all agents are pooled together per time step
-            # similarly calculate the ME index for every agent at every time step and pool per time step
-            me_index_all = np.zeros((len(indices), 100))
-            rewards_sorted = np.zeros((len(indices), 100))
-
-            for idx in indices:
-                me_index = np.zeros((100))  # unnormalized ME index
-
-                for run in range(100):
-
-                    rewards_sorted[idx, run] = rewards_all[run][idx]
-                    lexicon = lexica_all[run][idx]
-
-                    if agent_head == 'L0':
-                        listener = RSAListener0(n_states, n_messages, lexicon)
-                    elif agent_head == 'L1':
-                        listener = RSAListener1(n_states, n_messages, lexicon, alpha=5.)
-                    policy, _ = listener.get_states(agent_input)
-                    policy = np.squeeze(policy[:])
-                    policy = policy / np.sum(policy)
-                    me_index[run] = policy[-1]
-
-                # normalize the ME index for this agent and time step and append to the ME indices of the other
-                # agents for that time step
-                me_index_all[idx, :] = (me_index - (1 / n)) / ((n - 1) / n)
-
-            # plot mean and stds for the rewards and ME indices over time
-            mean_rewards = np.mean(rewards_sorted, axis=1)
-            std_rewards = np.std(rewards_sorted, axis=1)
-            mean_me_index = np.mean(me_index_all, axis=1)
-            std_me_index = np.std(me_index_all, axis=1)
-
-            ax.errorbar(indices, mean_rewards, yerr=std_rewards, errorevery=error_step, color=colors[a][0],
-                        linewidth=3.0)
-            ax.errorbar(indices, mean_me_index, yerr=std_me_index, errorevery=error_step, color=colors[a][1],
-                        linewidth=3.0, linestyle='dashed')
-
-            # if (n == 10):
-            #     print(mean_me_index)
-
-            plt.xticks(fontsize=20)
-            plt.yticks([0, 1], fontsize=20)
-            plt.xlabel('epoch', fontsize=25)
-            plt.ylabel('mean reward /\n ME index', fontsize=25)
-
-        if n == n_array[1]:
-            box = ax.get_position()
-            ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-            ax.legend(['literal reward', 'literal $I_{ME}$', 'pragmatic reward', 'pragmatic $I_{ME}$'],
-                      loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
-        fig.tight_layout()
-
-def plot_rewards_plus_me_index_lang(n_epoch = 100):
-    """ Plots the average reward and ME index over time for the single agent setting. The plots include the simulations
-        with three and ten states, where one message was left out from training.
-
-        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
-                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
-        :param n_array:     size 2 array of n values to plot for
-        :param n_ranges:    size 2 array of ranges of epochs to be plotted
-    """
-
-    colors = [['teal', 'teal'], ['blue', 'blue']]
-
-    fig = plt.figure(figsize=(10, 4))
-
-    n = 10
-
-    # which epochs should be plotted for three and ten states
-    indices = range(n_epoch)
-    # at what step size the error bars should be plotted for three and ten states
-    error_step = 10
-
-    ax = fig.add_subplot(1, 1, 1)
-
-    for b, blocked in enumerate(['labeling', 'bilingual']):
-
-        n_messages = n + b*n
-        n_states = n
-
-        filename = ('data/' + blocked + '/L1/10_states/L1_1missing_5.0alpha_')
-
-        # load lexica and rewards until the maximum epoch that should be plotted
-        lexica_all = []
-        rewards_all = []
-        for run in range(1, 101):
-            rewards = np.load(filename + 'rewards_run' + str(run) + '.npy')
-            lexica = np.load(filename + 'lexicon_run' + str(run) + '.npy')
-            lexica_all.append(lexica[indices])
-            rewards_all.append(rewards[indices])
-
-        # determine the test input as the example that was left out from training
-        agent_input = np.zeros((1, n_messages, n_states), dtype=np.float32)
-        agent_input[0, n - 1, :] = np.ones((1, n_states), dtype=np.float32)
-
-        # re-sort rewards and indices such that the values of all agents are pooled together per time step
-        # similarly calculate the ME index for every agent at every time step and pool per time step
-        me_index_all = np.zeros((len(indices), 100))
-        rewards_sorted = np.zeros((len(indices), 100))
-
-        for idx in indices:
-            me_index = np.zeros((100))  # unnormalized ME index
-
-            for run in range(100):
-
-                rewards_sorted[idx, run] = rewards_all[run][idx]
-                lexicon = lexica_all[run][idx]
-
-                listener = RSAListener1(n_states, n_messages, lexicon, alpha=5.)
-                policy, _ = listener.get_states(agent_input)
-                policy = np.squeeze(policy[:])
-                policy = policy / np.sum(policy)
-                me_index[run] = policy[-1]
-
-            # normalize the ME index for this agent and time step and append to the ME indices of the other
-            # agents for that time step
-            me_index_all[idx, :] = (me_index - (1 / n)) / ((n - 1) / n)
-
-        # plot mean and stds for the rewards and ME indices over time
-        mean_rewards = np.mean(rewards_sorted, axis=1)
-        std_rewards = np.std(rewards_sorted, axis=1)
-        mean_me_index = np.mean(me_index_all, axis=1)
-        std_me_index = np.std(me_index_all, axis=1)
-
-        ax.errorbar(indices, mean_rewards, yerr=std_rewards, errorevery=error_step, color=colors[b][0],
-                    linewidth=3.0)
-        ax.errorbar(indices, mean_me_index, yerr=std_me_index, errorevery=error_step, color=colors[b][1],
-                    linewidth=3.0, linestyle='dashed')
-
-        # if (n == 10):
-        #     print(mean_me_index)
-
-        plt.xticks(fontsize=20)
-        plt.yticks([0, 1], fontsize=20)
-        plt.xlabel('epoch', fontsize=25)
-        plt.ylabel('mean reward /\n ME index', fontsize=25)
-
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-    ax.legend(['monolingual reward', 'monolingual $I_{ME}$', 'bilingual reward', 'bilingual $I_{ME}$'],
-                loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
-    fig.tight_layout()
-
-def plot_rewards_plus_me_index_blocked(e=False, b=2):
-    """ Plots the average reward and ME index over time for the single agent setting. The plots include the simulations
-        with three and ten states, where one message was left out from training.
-
-        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
-                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
-        :param n_array:     size 2 array of n values to plot for
-        :param n_ranges:    size 2 array of ranges of epochs to be plotted
-    """
-
-    colors = [['blue', 'blue'], ['purple', 'purple']]
-
-    fig = plt.figure(figsize=(9, 4))
-
-    n = 10
-
-    n_messages = 2*n
+    n_messages = n_lang * n
     n_states = n
+    
+    # load lexica and rewards until the maximum epoch that should be plotted
+    lexica_all = []
+    rewards_all = []
+    for run in range(1, 101):
+        rewards = np.load(filename + 'rewards_run' + str(run) + '.npy')
+        lexica = np.load(filename + 'lexicon_run' + str(run) + '.npy')
+        lexica_all.append(lexica[indices])
+        rewards_all.append(rewards[indices])
 
-    # which epochs should be plotted for three and ten states
-    indices = range(100)
-    # at what step size the error bars should be plotted for three and ten states
-    error_step = 10
+    # determine the test input as the example that was left out from training
+    agent_input = np.zeros((1, n_messages, n_states), dtype=np.float32)
+    agent_input[0, n - 1, :] = np.ones((1, n_states), dtype=np.float32)
 
+    # re-sort rewards and indices such that the values of all agents are pooled together per time step
+    # similarly calculate the ME index for every agent at every time step and pool per time step
+    me_index_all = np.zeros((len(indices), 100))
+    rewards_sorted = np.zeros((len(indices), 100))
+
+    for idx in indices:
+        me_index = np.zeros((100))  # unnormalized ME index
+
+        for run in range(100):
+
+            rewards_sorted[idx, run] = rewards_all[run][idx]
+            lexicon = lexica_all[run][idx]
+
+            if agent_head == 0:
+                listener = RSAListener0(n_states, n_messages, lexicon)
+            elif agent_head == 1:
+                listener = RSAListener1(n_states, n_messages, lexicon, alpha=5.)
+            policy, _ = listener.get_states(agent_input)
+            policy = np.squeeze(policy[:])
+            policy = policy / np.sum(policy)
+            me_index[run] = (policy[-1] + policy[n-1]) / 2 if n_lang == 2 else policy[-1]
+
+        # normalize the ME index for this agent and time step and append to the ME indices of the other
+        # agents for that time step
+        me_index_all[idx, :] = (me_index - (1 / n)) / ((n - 1) / n)
+
+    return me_index_all, rewards_sorted
+
+
+def plot_rewards_me_index(colors, plot_array, legend_array, rewards=1, width=8, print_breaks=False):
+    """ Plots the average reward and ME index over time for the single agent setting, with ME=1.
+
+        :param colors:          array of colors for plots; must be at least as long as plot_array
+        :param plot_array:      array of dicts for data to be plotted; dicts have the following fields:
+            - n                 number of states
+            - blocked           0: not blocked; 1: blocked within epochs; 2: blocked across epochs
+            - b                 number of blocks
+            - reasoning         0: literal; 1: pragmatic
+            - ablation          0: not ablated; 1: ablated
+            - e_max             max epoch to plot up to
+            - n_lang            1: monolingual; 2: bilingual
+        :param legend_array:    array of labels for legend; must be same length as plot_array
+        :param rewards:         whether rewards should be plotted
+    """
+
+    fig = plt.figure(figsize=(width, 4))
     ax = fig.add_subplot(1, 1, 1)
 
-    for bl in [0,1]:
+    for p_index, p in enumerate(plot_array):
+        pe = p.get('e_max', 100)
+        # which epochs should be plotted
+        indices = list(range(pe))
+        # at what step size the error bars should be plotted
+        error_step = np.floor_divide(pe, 10)
 
-        if bl==0:
-            filename = ('data/bilingual/L1/10_states/L1_1missing_5.0alpha_')
-        elif e:
-            filename = ('data/bilingual_blocked_e/L1/10_states/' + str(b) + '_blocks/L1_1missing_5.0alpha_')
-        else:
-            filename = ('data/bilingual_blocked/L1/10_states/L1_1missing_5.0alpha_')
-
-        # load lexica and rewards until the maximum epoch that should be plotted
-        lexica_all = []
-        rewards_all = []
-        for run in range(1, 101):
-            rewards = np.load(filename + 'rewards_run' + str(run) + '.npy')
-            lexica = np.load(filename + 'lexicon_run' + str(run) + '.npy')
-            lexica_all.append(lexica[indices])
-            rewards_all.append(rewards[indices])
-
-        # determine the test input as the example that was left out from training
-        agent_input = np.zeros((1, n_messages, n_states), dtype=np.float32)
-        agent_input[0, n - 1, :] = np.ones((1, n_states), dtype=np.float32)
-
-        # re-sort rewards and indices such that the values of all agents are pooled together per time step
-        # similarly calculate the ME index for every agent at every time step and pool per time step
-        me_index_all = np.zeros((len(indices), 100))
-        rewards_sorted = np.zeros((len(indices), 100))
-
-        for idx in indices:
-            me_index = np.zeros((100))  # unnormalized ME index
-
-            for run in range(100):
-
-                rewards_sorted[idx, run] = rewards_all[run][idx]
-                lexicon = lexica_all[run][idx]
-
-                listener = RSAListener1(n_states, n_messages, lexicon, alpha=5.)
-                policy, _ = listener.get_states(agent_input)
-                policy = np.squeeze(policy[:])
-                policy = policy / np.sum(policy)
-                me_index[run] = policy[-1]
-
-            # normalize the ME index for this agent and time step and append to the ME indices of the other
-            # agents for that time step
-            me_index_all[idx, :] = (me_index - (1 / n)) / ((n - 1) / n)
-
-        # plot mean and stds for the rewards and ME indices over time
+        # getting the right filename for the current plot data
+        pl = p.get('n_lang', 2)
+        pb = p.get('blocked', 0)
+        pn = p.get('n', 10)
+        pa = p.get('reasoning', 1)
+        pah = p.get('ablation', 0) ^ pa
+        l_str = 'labeling' if pl == 1 else 'bilingual'
+        b_str = '_blocked' if pb == 1 else '_blocked_e' if pb == 2 else ''
+        bn_str = str(p.get('b', 1)) + '_blocks/' if pb > 0 else ''
+        a_str = '5.0alpha_' if pa else ''
+        filename = 'data/' + l_str + b_str + '/L' + str(pa) + '/' + str(pn) + '_states/' + \
+            bn_str + 'L' + str(pa) + '_1missing_' + a_str
+        
+        # get data + calculate rewards and ME indices
+        me_index_all, rewards_sorted = get_lexica_and_rewards(filename, indices, pn, pah, pl)
         mean_rewards = np.mean(rewards_sorted, axis=1)
         std_rewards = np.std(rewards_sorted, axis=1)
         mean_me_index = np.mean(me_index_all, axis=1)
         std_me_index = np.std(me_index_all, axis=1)
 
-        ax.errorbar(indices, mean_rewards, yerr=std_rewards, errorevery=error_step, color=colors[bl][0],
-                    linewidth=3.0)
-        ax.errorbar(indices, mean_me_index, yerr=std_me_index, errorevery=error_step, color=colors[bl][1],
-                    linewidth=3.0, linestyle='dashed')
-        
-        if bl:
-            print(mean_rewards)
+        if print_breaks:
+            maxidx = np.squeeze(np.where([mean_me_index[i] > mean_me_index[i+1] and \
+                mean_me_index[i] > mean_me_index[i-1] for i in range(1, pe-1)]))
+            maxidx = 'NA' if maxidx.size == 0 else maxidx+1
+            minidx = np.squeeze(np.where([mean_me_index[i] < mean_me_index[i+1] and \
+                mean_me_index[i] < mean_me_index[i-1] for i in range(1, pe-1)]))
+            minidx = 'NA' if minidx.size == 0 else minidx+1
+            print(str(pn) + '\tmax: ' + str(maxidx) + ';\tmin: ' + str(minidx))
 
-        # if (n == 10):
-        #     print(mean_me_index)
+        if rewards: 
+            ax.errorbar(indices, mean_rewards, yerr=std_rewards, errorevery=error_step, color=colors[p_index],
+                        linewidth=3.0)
+        ax.errorbar(indices, mean_me_index, yerr=std_me_index, errorevery=error_step, color=colors[p_index],
+                    linewidth=3.0, linestyle='dashed')
 
         plt.xticks(fontsize=20)
         plt.yticks([0, 1], fontsize=20)
         plt.xlabel('epoch', fontsize=25)
-        plt.ylabel('mean reward /\n ME index', fontsize=25)
-
+        ylab = 'mean reward /\n ME index' if rewards else 'mean ME index'
+        plt.ylabel(ylab, fontsize=25)
+    
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-    ax.legend(['interleaved reward', 'interleaved $I_{ME}$', 'blocked reward', 'blocked $I_{ME}$'],
-                loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
+    ax.legend(legend_array, loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
     fig.tight_layout()
-
-def plot_rewards_plus_me_index_blocked_agent(e_array = [1, 2, 4, 8, 16]):
-    """ Plots the average reward and ME index over time for the single agent setting (pragmatic agent only). 
-        The plots include the simulations with n_array states, where one message was left out from training.
-
-        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
-                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
-        :param n_array:     array of n values to plot for
-    """
-
-    colors = ['#f1cc65', '#c8a397', '#9f7e9d', '#735b9b', '#3d3b96']
-
-    fig = plt.figure(figsize=(10, 4))
-    n = 10
-
-    # n: number of states
-    for e_index, e in enumerate(e_array):
-
-        n_messages = 2*n
-        n_states = n
-
-        # which epochs should be plotted for three and ten states
-        indices = range(100)
-        # at what step size the error bars should be plotted for three and ten states
-        error_step = 10
-
-        # ax = fig.add_subplot(1, 2, n_index + 1)
-
-        # for a, agent in enumerate(['L0', 'L1']):
-
-        if e == 1:
-            filename = ('data/bilingual/L1/10_states/L1_1missing_5.0alpha_')
-        else:
-            filename = ('data/bilingual_blocked_e/L1/10_states/' + str(e) + '_blocks/L1_1missing_5.0alpha_')
-
-        # load lexica and rewards until the maximum epoch that should be plotted
-        lexica_all = []
-        rewards_all = []
-        for run in range(1, 101):
-            rewards = np.load(filename + 'rewards_run' + str(run) + '.npy')
-            lexica = np.load(filename + 'lexicon_run' + str(run) + '.npy')
-            lexica_all.append(lexica[indices])
-            rewards_all.append(rewards[indices])
-
-        # determine the test input as the example that was left out from training
-        agent_input = np.zeros((1, n_messages, n_states), dtype=np.float32)
-        agent_input[0, n - 1, :] = np.ones((1, n_states), dtype=np.float32)
-
-        # re-sort rewards and indices such that the values of all agents are pooled together per time step
-        # similarly calculate the ME index for every agent at every time step and pool per time step
-        me_index_all = np.zeros((len(indices), 100))
-        rewards_sorted = np.zeros((len(indices), 100))
-
-        for idx in indices:
-            me_index = np.zeros((100))  # unnormalized ME index
-
-            for run in range(100):
-
-                rewards_sorted[idx, run] = rewards_all[run][idx]
-                lexicon = lexica_all[run][idx]
-
-                listener = RSAListener1(n_states, n_messages, lexicon, alpha=5.)
-                policy, _ = listener.get_states(agent_input)
-                policy = np.squeeze(policy[:])
-                policy = policy / np.sum(policy)
-                me_index[run] = policy[-1]
-
-            # normalize the ME index for this agent and time step and append to the ME indices of the other
-            # agents for that time step
-            me_index_all[idx, :] = (me_index - (1 / n)) / ((n - 1) / n)
-
-        # plot mean and stds for the rewards and ME indices over time
-        #mean_rewards = np.mean(rewards_sorted, axis=1)
-        #std_rewards = np.std(rewards_sorted, axis=1)
-        mean_me_index = np.mean(me_index_all, axis=1)
-        std_me_index = np.std(me_index_all, axis=1)
-
-        #plt.errorbar(indices, mean_rewards, yerr=std_rewards, errorevery=error_step, color=colors[n_index],
-        #            linewidth=3.0)
-        plt.errorbar(indices, mean_me_index, yerr=std_me_index, errorevery=error_step, color=colors[e_index],
-                    linewidth=3.0, linestyle='dashed')
-
-        plt.xticks(fontsize=20)
-        plt.yticks([0, 1], fontsize=20)
-        plt.xlabel('epoch', fontsize=25)
-        plt.ylabel('mean ME index', fontsize=25)
-
-    # if n == 10:
-    #box = plt.get_position()
-    #plt.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-    plt.legend(['interleaved'] + [str(i) + ' blocks' for i in e_array[1:]],
-                loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
-    fig.tight_layout()
-
-def plot_rewards_plus_me_index_pragmatic_agent(ablation=False, n_array = [6, 7, 8, 9, 10], e_range = 100):
-    """ Plots the average reward and ME index over time for the single agent setting (pragmatic agent only). 
-        The plots include the simulations with n_array states, where one message was left out from training.
-
-        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
-                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
-        :param n_array:     array of n values to plot for
-    """
-
-    colors = ['#3cf49c', '#13eac9', '#0dc5d0', '#0986b5', '#055199', '#022B88', '#0B0065', '#000030']
-
-    fig = plt.figure(figsize=(8, 4))
-
-    # n: number of states
-    for n_index, n in enumerate(n_array):
-
-        n_messages = 2*n
-        n_states = n
-
-        # which epochs should be plotted for three and ten states
-        indices = range(e_range)
-        # at what step size the error bars should be plotted for three and ten states
-        error_step = 10
-
-        # ax = fig.add_subplot(1, 2, n_index + 1)
-
-        agent = 'L1'
-
-        # for a, agent in enumerate(['L0', 'L1']):
-
-        # determine which lexica to evaluate and which reasoning ability at test time
-        agent_body = agent  # agent body determines whether the lexica of literal or pragmatic agents are used
-        agent_head = agent  # agent head determined whether the literal or pragmatic reasoning is used at test time
-        if ablation and agent_body == 'L0':
-            agent_head = 'L1'
-        elif ablation and agent_body == 'L1':
-            agent_head = 'L0'
-
-        # set file path
-        if agent_body == 'L0':
-            filename = ('data/bilingual/L0/' + str(n) + '_states/' + agent_body + '_1missing_')
-        elif agent_body == 'L1':
-            filename = ('data/bilingual/L1/' + str(n) + '_states/' + agent_body + '_1missing_5.0alpha_')
-
-        # load lexica and rewards until the maximum epoch that should be plotted
-        lexica_all = []
-        rewards_all = []
-        for run in range(1, 101):
-            rewards = np.load(filename + 'rewards_run' + str(run) + '.npy')
-            lexica = np.load(filename + 'lexicon_run' + str(run) + '.npy')
-            lexica_all.append(lexica[indices])
-            rewards_all.append(rewards[indices])
-
-        # determine the test input as the example that was left out from training
-        agent_input = np.zeros((1, n_messages, n_states), dtype=np.float32)
-        agent_input[0, n - 1, :] = np.ones((1, n_states), dtype=np.float32)
-
-        # re-sort rewards and indices such that the values of all agents are pooled together per time step
-        # similarly calculate the ME index for every agent at every time step and pool per time step
-        me_index_all = np.zeros((len(indices), 100))
-        rewards_sorted = np.zeros((len(indices), 100))
-
-        for idx in indices:
-            me_index = np.zeros((100))  # unnormalized ME index
-
-            for run in range(100):
-
-                rewards_sorted[idx, run] = rewards_all[run][idx]
-                lexicon = lexica_all[run][idx]
-
-                if agent_head == 'L0':
-                    listener = RSAListener0(n_states, n_messages, lexicon)
-                elif agent_head == 'L1':
-                    listener = RSAListener1(n_states, n_messages, lexicon, alpha=5.)
-                policy, _ = listener.get_states(agent_input)
-                policy = np.squeeze(policy[:])
-                policy = policy / np.sum(policy)
-                me_index[run] = policy[-1]
-
-            # normalize the ME index for this agent and time step and append to the ME indices of the other
-            # agents for that time step
-            me_index_all[idx, :] = (me_index - (1 / n)) / ((n - 1) / n)
-
-        # plot mean and stds for the rewards and ME indices over time
-        #mean_rewards = np.mean(rewards_sorted, axis=1)
-        #std_rewards = np.std(rewards_sorted, axis=1)
-        mean_me_index = np.mean(me_index_all, axis=1)
-        std_me_index = np.std(me_index_all, axis=1)
-
-        maxval = max(mean_me_index[0:36])
-        maxvalidx = np.squeeze(np.where(mean_me_index == maxval))
-        minval = min(mean_me_index[maxvalidx:100])
-        minvalidx = np.squeeze(np.where(mean_me_index == minval))
-        print(str(n) + "\t" + str(maxvalidx) + ":" + str(maxval) + "; " + str(minvalidx) + ":" + str(minval))
-
-        #plt.errorbar(indices, mean_rewards, yerr=std_rewards, errorevery=error_step, color=colors[n_index],
-        #            linewidth=3.0)
-        plt.errorbar(indices, mean_me_index, yerr=std_me_index, errorevery=error_step, color=colors[n_index],
-                    linewidth=3.0, linestyle='dashed')
-
-        plt.xticks(fontsize=20)
-        plt.yticks([0, 1], fontsize=20)
-        plt.xlabel('epoch', fontsize=25)
-        plt.ylabel('mean ME index', fontsize=25)
-
-    # if n == 10:
-    #box = plt.get_position()
-    #plt.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-    plt.legend(['N=' + str(i) for i in n_array],
-                loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
-    fig.tight_layout()
-
-def plot_rewards_plus_me_index_two_agents(ablation=False):
-    """ Plots the average reward and ME index over time for the two agent setting.
-        The plots include the simulations with three and ten states where one state was left out from training.
-
-        :param ablation:    indicates whether calculations are for the standard evaluation or the ablation test; for
-                            the ablation study the pragmatic reasoning abilities of the agents are changed at test time.
-    """
-
-    colors = [['red', 'red'], ['blue', 'blue']]
-
-    fig = plt.figure(figsize=(15, 4))
-
-    # n: number of states
-    for n_index, n in enumerate([3, 10]):
-
-        # which epochs should be plotted for three and ten states
-        indices = [list(range(100)), list(range(1000))][n_index]
-        # at what step size the error bars should be plotted for three and ten states
-        error_step = [10, 100][n_index]
-
-        ax = fig.add_subplot(1, 2, n_index + 1)
-
-        for a, agent in enumerate(['L0_S0', 'L1_S1']):
-
-            # determine which lexica to evaluate and which reasoning ability at test time
-            agent_body = agent  # agent body determines whether the lexica of literal or pragmatic agents are used
-            agent_head = agent  # agent head determined whether the literal or pragmatic reasoning is used at test time
-            if ablation and agent_body == 'L0_S0':
-                agent_head = 'L1_S1'
-            elif ablation and agent_body == 'L1_S1':
-                agent_head = 'L0_S0'
-
-            # set file path
-            if agent == 'L0_S0':
-                filename = 'data/communication/' + str(n) + '_states/' + agent_body + '_1missing_'
-            if agent == 'L1_S1':
-                filename = 'data/communication/' + str(n) + '_states/' + agent_body + '_1missing_5.0alpha_'
-
-            # load lexica and rewards until the maximum epoch that should be plotted
-            lexica_all_speaker = []
-            lexica_all_listener = []
-            rewards_all = []
-            for run in range(1, 101):
-                rewards = np.load(filename + 'rewards_run' + str(run) + '.npy')
-                lexica_speaker = np.load(filename + 'lexicon_S_run' + str(run) + '.npy')
-                lexica_listener = np.load(filename + 'lexicon_L_run' + str(run) + '.npy')
-                lexica_all_speaker.append(lexica_speaker)
-                lexica_all_listener.append(lexica_listener)
-                rewards_all.append(rewards)
-
-            # determine the test input as the example that was left out from training
-            agent_input = np.zeros((1, n, n), dtype=np.float32)
-            agent_input[0, n - 1, :] = np.ones((1, n), dtype=np.float32)
-
-            me_index_all = np.zeros((len(indices), 100))
-            rewards_sorted = np.zeros((len(indices), 100))
-
-            # re-sort rewards and indices such that the values of all agents are pooled together per time step
-            # similarly calculate the ME index for every agent at every time step and pool per time step
-            for count_indices, index in enumerate(indices):
-
-                me_index = np.zeros(100)  # unnormalized ME index
-
-                for run in range(100):
-
-                    rewards_sorted[count_indices, run] = rewards_all[run][index]
-
-                    lexicon_speaker = lexica_all_speaker[run][index]
-                    lexicon_listener = lexica_all_listener[run][index]
-
-                    if agent_head == 'L0_S0':
-                        listener = RSAListener0(n, n, lexicon_listener)
-                        speaker = RSASpeaker0(n, n, lexicon_speaker)
-                    elif agent_head == 'L1_S1':
-                        listener = RSAListener1(n, n, lexicon_listener, alpha=5.)
-                        speaker = RSASpeaker1(n, n, lexicon_speaker, alpha=5.)
-
-                    # get speaker's policy for test input state
-                    policy, _ = speaker.get_messages(agent_input)
-                    policy = np.squeeze(policy[:])
-                    policy = policy / np.sum(policy)
-
-                    # get listener's policy for every input message weighted by probability that speaker generates
-                    # that message given the test input state
-                    selections = np.zeros((n, n))
-                    for input_idx in range(n):
-                        listener_input = np.zeros((1, n, n))
-                        listener_input[0, input_idx, :] = np.ones((1, n))
-                        selection, _ = listener.get_states(listener_input)
-                        selection = np.squeeze(selection[:])
-                        selection = selection / np.sum(selection)
-                        selections[input_idx, :] = policy[input_idx] * selection
-                    # sum up to get the probability of the speaker selecting any state given that the speaker gets the
-                    # test input state
-                    selections = np.sum(selections, axis=0)
-
-                    # normalize the ME index for this agent and time step and append to the ME indices of the other
-                    # agents for that time step
-                    me_index[run] = (selections[-1] / np.sum(selections) - 1 / n) / ((n - 1) / n)
-
-                me_index_all[count_indices, :] = me_index
-
-            # plot mean and stds for the rewards and ME indices over time
-            mean_rewards = np.mean(rewards_sorted, axis=1)
-            std_rewards = np.std(rewards_sorted, axis=1)
-            mean_me_index = np.mean(me_index_all, axis=1)
-            std_me_index = np.std(me_index_all, axis=1)
-
-            if n == 10 and agent_body == 'L1_S1':
-                error_step = 90
-            ax.errorbar(indices, mean_rewards, yerr=std_rewards, errorevery=error_step, color=colors[a][0],
-                        linewidth=3.0)
-            if n == 10 and agent_body == 'L1_S1':
-                error_step = 95
-            ax.errorbar(indices, mean_me_index, yerr=std_me_index, errorevery=error_step, color=colors[a][1],
-                        linewidth=3.0, linestyle='dashed')
-
-            plt.xticks(fontsize=20)
-            plt.yticks([0, 1], fontsize=20)
-            plt.xlabel('epoch', fontsize=25)
-            plt.ylabel('mean reward /\n ME index', fontsize=25)
-
-        if n == 10:
-            box = ax.get_position()
-            ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-            ax.legend(['literal reward', 'literal $I_{ME}$', 'pragmatic reward', 'pragmatic $I_{ME}$'],
-                      loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
-        fig.tight_layout()
